@@ -195,6 +195,10 @@ if skip_bf==False:
 print('Normalizing intensities')
 Iim = Iim * 110 / np.median(Iim[(Sim==2) | (Sim==41)])
 
+# At this point, we don't need parcels anymore
+Sim[Sim>=2000] = 42
+Sim[Sim>=1000] = 3
+
 # We should do tensors at this point...
 Sim = torch.tensor(Sim, dtype=torch.int, device=device)
 Iim = torch.tensor(Iim, dtype=dtype, device=device)
