@@ -212,6 +212,10 @@ if skip_bf==False:
 print('Normalizing intensities')
 Iim = Iim * 110 / np.median(Iim[(Sim==2) | (Sim==41)])
 
+# At this point, we don't need parcels anymore
+Sim[Sim>=2000] = 42
+Sim[Sim>=1000] = 3
+
 ########################################################
 
 print('Subdividing brainstem into left and right halves')

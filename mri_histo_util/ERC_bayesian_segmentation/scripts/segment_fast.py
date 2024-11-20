@@ -195,6 +195,10 @@ if skip_bf==False:
 print('Normalizing intensities')
 Iim = Iim * 110 / np.median(Iim[(Sim==2) | (Sim==41)])
 
+# At this point, we don't need parcels anymore
+Sim[Sim>=2000] = 42
+Sim[Sim>=1000] = 3
+
 # We should do tensors at this point...
 Sim = torch.tensor(Sim, dtype=torch.int, device=device)
 Iim = torch.tensor(Iim, dtype=dtype, device=device)
@@ -236,6 +240,7 @@ IJKim = torch.stack(torch.meshgrid(vectors))
 RAS = torch.stack([aff[0,0] * IJKim[0] + aff[0,1] * IJKim[1] + aff[0,2] * IJKim[2] + aff[0,3] + FIELD[...,0],
                      aff[1,0] * IJKim[0] + aff[1,1] * IJKim[1] + aff[1,2] * IJKim[2] + aff[1,3] + FIELD[...,1],
                      aff[2,0] * IJKim[0] + aff[2,1] * IJKim[1] + aff[2,2] * IJKim[2] + aff[2,3] + FIELD[...,2]])
+del FIELD
 
 # Added in summer 2024: kill bottom of medulla
 CSF = 24
@@ -244,6 +249,7 @@ Sim[((Sim==BRAINSTEM) | (Sim==CSF)) & (RAS[2]<(-60))] = 0
 LEFT = (RAS[0]<0)
 Sim[(Sim==BRAINSTEM) & LEFT] = BRAINSTEM_L
 Sim[(Sim==BRAINSTEM) & (LEFT==0)] = BRAINSTEM_R
+del LEFT
 
 #######################################
 
@@ -419,6 +425,7 @@ for t in range(len(number_of_gmm_components)-1):
             vars_ini.append(gmm_var * torch.ones(nc, dtype=dtype, device=device))
             mixture_weights.append(gmm_ws)
 
+del x, W, normalizer, denominators, gmm_ws
 mus_ini = torch.concatenate(mus_ini)
 vars_ini = torch.concatenate(vars_ini)
 mixture_weights = torch.concatenate(mixture_weights)
@@ -430,6 +437,7 @@ if SET_BG_TO_CSF:
     for l in [43, 44]: # , 24]:
         x.append(Iim[1][Sim[1]==l])
     mu_bg  = torch.median(torch.concatenate(x))
+    del x
 else:
     mu_bg = torch.tensor(0, dtype=dtype, device=device)
 
@@ -460,9 +468,9 @@ for h in range(2):
     Jskip = T[1, 0] * RAS_r[::skip, ::skip, ::skip, 0] + T[1, 1] * RAS_r[::skip, ::skip, ::skip, 1] + T[1, 2] * RAS_r[::skip, ::skip, ::skip, 2] + T[1, 3]
     Kskip = T[2, 0] * RAS_r[::skip, ::skip, ::skip, 0] + T[2, 1] * RAS_r[::skip, ::skip, ::skip, 1] + T[2, 2] * RAS_r[::skip, ::skip, ::skip, 2] + T[2, 3]
 
-    Iskip = 2 * (Iskip / (A.shape[0] - 1)) - 1
-    Jskip = 2 * (Jskip / (A.shape[1] - 1)) - 1
-    Kskip = 2 * (Kskip / (A.shape[2] - 1)) - 1
+    Iskip *= (2.0/(A.shape[0] - 1.0)); Iskip -= 1.0
+    Jskip *= (2.0/(A.shape[1] - 1.0)); Jskip -= 1.0
+    Kskip *= (2.0/(A.shape[2] - 1.0)); Kskip -= 1.0
 
     # Careful with grid_sample switching the order of the dimensions (go figure...)
     priors = grid_sample(A.permute([3,0,1,2])[None, ...], torch.stack([Kskip, Jskip, Iskip],axis=-1)[None,...], align_corners=True)
@@ -542,7 +550,7 @@ for h in range(2):
     means_both_sides.append(means)
     variances_both_sides.append(variances)
     weights_both_sides.append(weights)
-
+    del priors, W, x, I_r, normalizer, loglhood
 
 ###########
 
@@ -557,7 +565,8 @@ for h in range(2):
         # The 1e-9 ensures no zeros were prior is not zero
         GAUSSIAN_LHOODS[h][..., c] = 1.0 / torch.sqrt(2 * math.pi * variances_both_sides[h][c]) * torch.exp(
         -0.5 * torch.pow(I_full - means_both_sides[h][c], 2.0) / variances_both_sides[h][c]) + 1e-9
-
+    del I_full, M_full
+    
 print('Computing deformed coordiantes at full resolution (we will reuse over and over)')
 I = []
 J = []
@@ -571,7 +580,8 @@ for h in range(2):
     I.append(2 * ((T[0, 0] * RAS_r[..., 0] + T[0, 1] * RAS_r[..., 1] + T[0, 2] * RAS_r[..., 2] + T[0, 3]) / (A.shape[0] - 1)) - 1)
     J.append(2 * ((T[1, 0] * RAS_r[..., 0] + T[1, 1] * RAS_r[..., 1] + T[1, 2] * RAS_r[..., 2] + T[1, 3]) / (A.shape[1] - 1)) - 1)
     K.append(2 * ((T[2, 0] * RAS_r[..., 0] + T[2, 1] * RAS_r[..., 1] + T[2, 2] * RAS_r[..., 2] + T[2, 3]) / (A.shape[2] - 1)) - 1)
-
+    del RAS_r
+    
 print('Computing normalizers (faster to do now with clustered priors)')
 # We deform one class at the time; slower, but less memory
 normalizers = []
@@ -588,7 +598,7 @@ for h in range(2):
             lhood += (weights_both_sides[h][gaussian_number] * GAUSSIAN_LHOODS[h][..., gaussian_number])
             gaussian_number += 1
         normalizers[h] += (prior * lhood)
-
+    del prior, lhood
 
 print('Deforming one label at the time')
 names, colors = my.read_LUT(LUT_file)
