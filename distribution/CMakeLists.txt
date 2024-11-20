@@ -17,7 +17,10 @@ install(FILES
   FreeSurferColorLUT.txt
   luts/ReducedLabels24.txt
   luts/ReducedLabels35.txt
+  luts/ReducedLabels5.txt
   luts/ReducedLabels4.txt
+  luts/compressed_lut.txt
+  luts/nonlat.txt
   DESTINATION luts
 )
 
