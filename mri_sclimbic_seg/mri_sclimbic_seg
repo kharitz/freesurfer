@@ -237,7 +237,8 @@ def main():
             print('\nSegmenting subject %s %d/%d' % (subj, n + 1, len(subjects)))
             segmenter.process_files(**params)
 
-        segmenter.write_all_case_volumes(summary_file_prefix + 'volumes_all.csv')
+        if len(subjects) > 1:
+            segmenter.write_all_case_volumes(summary_file_prefix + 'volumes_all.csv')
 
     else:
         # normal file/directory input mode
