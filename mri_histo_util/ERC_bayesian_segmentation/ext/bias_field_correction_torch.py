@@ -110,21 +110,21 @@ def get_basis_functions_dct(shape, order=3, device='cpu', dtype=torch.float32):
     return B
 
 # Main function to correct bias field
-def correct_bias(mri, seg, maxit=100, penalty=0.1, order=4, basis='hybrid', device='cpu', dtype=torch.float32):
+def correct_bias(mri, seg, maxit=100, penalty=0.1, order=5, basis='hybrid', device='cpu', dtype=torch.float32):
 
     with torch.no_grad():
         # get image and masks as tensors, all masked by segmentation
-        mri[mri<0] = 0 # avoid logarithm of negative numbers...
-        mask = seg > 0
+        mask = (seg > 0) & (mri>0) # avoid logarithm of negative numbers...
         I = torch.tensor(np.squeeze(mri)[mask > 0], device=device, dtype=dtype)
         nvox = I.shape[0]
         nclass = len(CLUSTER_DICT)
-        post = torch.zeros([nvox, nclass], device=device, dtype=dtype)
-        seg[seg >= 2000] = 42
-        seg[seg > 1000] = 3
+        prior = torch.zeros([nvox, nclass], device=device, dtype=dtype)
+        seg2 = seg.copy()
+        seg2[seg2 >= 2000] = 42
+        seg2[seg2 > 1000] = 3
 
         print('Gaussian filtering for bias field correction')
-        sigma = 1.0
+        sigma = .4
         sl = np.ceil(sigma * 2.5).astype(int)
         v = np.arange(-sl, sl + 1)
         gauss = np.exp((-(v / sigma) ** 2 / 2))
@@ -135,13 +135,14 @@ def correct_bias(mri, seg, maxit=100, penalty=0.1, order=4, basis='hybrid', devi
         for it_lab, (lab_str, lab_list) in enumerate(CLUSTER_DICT.items()):
             M = torch.zeros(mri.shape, device=device, dtype=dtype)
             for lab in lab_list:
-                M[seg==lab] = 1.0
+                M[seg2==lab] = 1.0
             M = M[None, None, :,:,:]
             for d in range(3):
                 M = torch.conv3d(M, kernel, bias=None, stride=1, padding=[0, 0, int((kernel.shape[-1] - 1) / 2)])
                 M = M.permute([0, 1, 4, 2, 3])
             M = torch.squeeze(M)
-            post[:, it_lab] = M[mask]
+            prior[:, it_lab] = M[mask]
+        prior /= torch.sum(prior,dim=1)[:, None]
 
         # Get basis functions, and mask by segmentation as well
         if basis=='hybrid':
@@ -172,35 +173,50 @@ def correct_bias(mri, seg, maxit=100, penalty=0.1, order=4, basis='hybrid', devi
         REG = penalty * torch.eye(nbf, device=device, dtype=dtype)
         mus = torch.zeros(nclass, device=device, dtype=dtype)
         vars = torch.zeros(nclass, device=device, dtype=dtype)
-        normalizer = torch.sum(post, axis=0)
+        lhood = torch.zeros_like(prior)
+        ycorr = y.clone()
         ready = False
         it = 0
         while ready==False:
             it = it + 1
-            ycorr = y - torch.sum(A * C, dim=1)
-            cost = torch.zeros(1, device=device, dtype=dtype)
-            for j in range(nclass):
-                mus[j]  = torch.sum(ycorr * post[:, j]) / normalizer[j]
-                aux = ycorr - mus[j]
-                vars[j] = torch.sum( (aux * aux) * post[:, j]) / normalizer[j]
-                wij[:, j] = post[:, j] / vars[j]
-                cost += torch.mean(post[:,j] * (0.5 * torch.log(2*torch.pi*vars[j]) +0.5 * (ycorr - mus[j])**2 ))
-            wi = torch.sum(wij, axis=1)
 
+            # E-step
+            if it==1: # skip E-step
+                post = prior.clone()
+                normalizer = torch.sum(post, axis=1)
+                cost = torch.tensor(1000000.000,device=device, dtype=dtype)
+            else:
+                for j in range(nclass):
+                    aux = ycorr - mus[j]
+                    lhood[:,j] = (1e-8) + (1/torch.sqrt(2*torch.pi*vars[j])) * torch.exp((-0.5/vars[j]) * aux * aux)
+                post = prior * lhood
+                normalizer =  torch.sum(post, axis=1)
+                post /= normalizer[:,None]
+                cost = -torch.mean(torch.log(normalizer))
+
+            # M-step
+            class_normalizers = torch.sum(post, dim=0)
+            for j in range(nclass):
+                mus[j] = torch.sum(ycorr * post[:, j]) / class_normalizers[j]
+                aux = ycorr - mus[j]
+                vars[j] = torch.sum((aux * aux) * post[:, j]) / class_normalizers[j]
+                wij[:, j] = post[:, j] / vars[j]
+            wi = torch.sum(wij, axis=1)
             R[:] = y[:]
             for j in range(nclass):
                 R -=  ((wij[:,j] / wi) * mus[j])
-
             Cold = torch.clone(C)
             C = torch.inverse(A.T @ (wi[..., None] * A) + REG) @ (A.T @ (wi * R))
-            diff = torch.sum((C-Cold)**2)
-            print('  Iteration ' + str(it) + ': difference is ' + str(diff.item()))
-            if diff<1e-6:
+            diff = torch.sum((C - Cold) ** 2)
+            del Cold
+            print('  Iteration ' + str(it) + ': cost is ' + str(cost.item()) + ', and difference is ' + str(diff.item()))
+            if diff < 1e-9:
                 print('  Converged')
                 ready = True
-            if it==maxit:
+            if it == maxit:
                 print('  Tired convergence')
                 ready = True
+            ycorr = y - torch.sum(A * C, dim=1)
 
         Icorr = torch.zeros(mask.shape, device=device, dtype=dtype)
         Icorr[mask] = (torch.exp(ycorr) - 1) / factor
@@ -209,5 +225,6 @@ def correct_bias(mri, seg, maxit=100, penalty=0.1, order=4, basis='hybrid', devi
         cost = cost.detach().cpu().numpy()
 
     torch.cuda.empty_cache()
+
 
     return Icorr, cost
