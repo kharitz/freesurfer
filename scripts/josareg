@@ -1,0 +1,442 @@
+#!/bin/tcsh -f
+# josareg - sources
+if(-e $FREESURFER_HOME/sources.csh) then
+  #source $FREESURFER_HOME/sources.csh
+endif
+
+set VERSION = '$Id$';
+set scriptname = `basename $0`
+
+set subject = ();
+set outdir = ();
+set outdirset = 0
+set threads = 1
+set ForceUpdate = 0
+set hemilist = (lh rh)
+set modeltop = $FREESURFER/models/
+set tifname = folding.atlas.acfb40.noaparc.i12.2016-08-02.tif 
+set DoPost = 0
+set MakeLinks = 1
+set sdir = ()
+set spherename = sphere
+
+set tmpdir = ();
+set cleanup = 1;
+set LF = ();
+set LFpassed = 0
+set udmade = 0
+
+set inputargs = ($argv);
+set PrintHelp = 0;
+if($#argv == 0) goto usage_exit;
+set n = `echo $argv | grep -e -help | wc -l` 
+if($n != 0) then
+  set PrintHelp = 1;
+  goto usage_exit;
+endif
+set n = `echo $argv | grep -e -version | wc -l` 
+if($n != 0) then
+  echo $VERSION
+  exit 0;
+endif
+goto parse_args;
+parse_args_return:
+goto check_params;
+check_params_return:
+
+set StartTime = `date`;
+set tSecStart = `date '+%s'`;
+set year  = `date +%Y`
+set month = `date +%m`
+set day   = `date +%d`
+set hour   = `date +%H`
+set min    = `date +%M`
+
+mkdir -p $outdir/log
+pushd $outdir > /dev/null
+set outdir = `pwd`;
+popd > /dev/null
+
+if($#tmpdir == 0) then
+  if(-dw /scratch)   set tmpdir = /scratch/tmpdir.josareg.$$
+  if(! -dw /scratch) set tmpdir = $outdir/tmpdir.josareg.$$
+endif
+#mkdir -p $tmpdir
+
+# Set up log file
+if($#LF == 0) set LF = $outdir/log/josareg.Y$year.M$month.D$day.H$hour.M$min.log
+if($LF != /dev/null) rm -f $LF
+echo "Log file for josareg" >> $LF
+date  | tee -a $LF
+echo "" | tee -a $LF
+echo "setenv SUBJECTS_DIR $SUBJECTS_DIR" | tee -a $LF
+echo "cd `pwd`"  | tee -a $LF
+echo $0 $inputargs | tee -a $LF
+ls -l $0  | tee -a $LF
+echo "" | tee -a $LF
+cat $FREESURFER_HOME/build-stamp.txt | tee -a $LF
+echo $VERSION | tee -a $LF
+uname -a  | tee -a $LF
+echo "pid $$" | tee -a $LF
+if($?PBS_JOBID) then
+  echo "pbsjob $PBS_JOBID"  >> $LF
+endif
+if($?SLURM_JOB_ID) then
+  echo SLURM_JOB_ID $SLURM_JOB_ID >> $LF
+endif
+
+# this should not be there. Avnish is figuring it out
+# looks like it is gone now
+#set pyfspack = $FREESURFER/python/packages/freesurfer
+#if(-e $pyfspack) rm -rf $pyfspack
+
+#========================================================
+foreach hemi ($hemilist)
+  #set h5 = $modeltop/mris_register_josa_${hemi}_20231025.h5
+  set h5 = $modeltop/mris_register_josa_20240401_${hemi}.h5
+  set sphere = $sdir/$hemi.$spherename
+  set sulc = $sdir/$hemi.sulc
+  set curv = $sdir/$hemi.curv
+  set inflated = $sdir/$hemi.inflated
+  set inflatedH = $sdir/$hemi.inflated.H
+  # Set white to ?h.smoothwm. In recon-all, mris_register is done
+  # before the white surface is actually created, so it uses the
+  # smoothwm. In topofit, this will just be a link the lh.white
+  set white = $sdir/$hemi.smoothwm
+
+  if(! -e $curv) then
+    # In recon-all, white ?h.curv is computed *after* reg, but josa
+    # needs it now; mris_register implicitly computes it from smoothwm.
+    # I'm not sure that this output will be identical to that from
+    # the implicit curv calc in mris_register.
+    set curv = $outdir/$hemi.curv.josa
+    set ud = `UpdateNeeded $curv $white`
+    if($ud || $ForceUpdate) then
+      set cmd = (mris_place_surface --curv-map $white 2 10 $curv)
+      echo $cmd | tee -a $LF
+      fs_time $cmd |& tee -a $LF
+      if($status) goto error_exit
+      set udmade = 1
+    endif
+  endif
+
+  # First to the rigid reg
+  set sphereregrigid = $outdir/$hemi.fsaverage.sphere.rigid.reg
+  set ud = `UpdateNeeded $sphereregrigid $sulc $sphere $white`
+  if($ud || $ForceUpdate)then
+    set tif = $FREESURFER/average/$hemi.$tifname
+    # This will implicitly read sulc. -o means "orig" surf
+    # -N 0 means rigid
+    set cmd = (mris_register -N 0 -threads $threads -o $white -surf0 $inflated -surf1 $white \
+      -surf2 $white -curv $sphere $tif $sphereregrigid)
+    echo $cmd | tee -a $LF
+    fs_time $cmd |& tee -a $LF
+    if($status) goto error_exit
+    set udmade = 1
+  endif
+
+  # Now do the josa surface-based reg
+  set spherejreg = $outdir/$hemi.josa.sphere.reg # must be $hemi.sphere.reg for now
+  set ud = `UpdateNeeded $spherejreg $sphereregrigid $sulc $curv $inflatedH`
+  if($ud || $ForceUpdate)then
+    set cmd = (mris_register_josa --hmsp $hemi --sulc_file $sulc --curv_file $curv \
+     --inflated_curv_file $inflatedH --sphere_rot $sphereregrigid \
+     --model $h5 --output $spherejreg --threads $threads)
+    echo "\n\n" $cmd "\n\n" | tee -a $LF
+    fs_time $cmd |& tee -a $LF
+    if($status) goto error_exit
+    set udmade = 1
+    echo "\n\n" | tee -a $LF
+  endif
+
+  # Make links
+  if($MakeLinks) then
+    pushd $sdir
+    if(! $outdirset) then
+      # if outdir not set, make a local link; makes it more portable
+      ln -sf josa/$hemi.josa.sphere.reg $hemi.sphere.reg
+    else
+      ln -sf $outdir/$hemi.josa.sphere.reg $hemi.sphere.reg
+    endif
+    popd
+  endif
+
+  if(! $DoPost) continue
+
+  # This maps a few things to the template space, mostly for debugging
+  set fsasphreg = $FREESURFER/subjects/fsaverage/surf/$hemi.sphere.reg
+  foreach method (josa) # rigid fs
+    if($method == josa)   set sphreg = $spherejreg
+    if($method == rigid)  set sphreg = $sphereregrigid
+    if($method == fs && ! $MakeLinks)  set sphreg = $sdir/$hemi.sphere.reg
+    foreach meas ($measlist)
+      if($meas != aparc) set srcmeas = $sdir/$hemi.$meas
+      if($meas == aparc) set srcmeas = $ldir/$hemi.$meas.annot
+      set fsameas = $outdir/$hemi.$meas.josa.mgz
+      if($method == rigid)  set fsameas = $outdir/$hemi.$meas.fsaverage.rigid.mgz
+      if($method == fs)     set fsameas = $outdir/$hemi.$meas.fsaverage.fs.mgz
+      set ud = `UpdateNeeded $fsameas $srcmeas $spherejreg`
+      if($ud || $ForceUpdate)then
+        set cmd = (mris_apply_reg --streg $sphreg $fsasphreg --o $fsameas)
+        if($meas != aparc) set cmd = ($cmd --src $srcmeas)
+        if($meas == aparc) set cmd = ($cmd --src-annot $srcmeas)
+        echo $cmd | tee -a $LF
+        fs_time $cmd |& tee -a $LF
+        if($status) goto error_exit
+        set udmade = 1
+      endif
+    end
+  end
+
+end
+
+#========================================================
+
+# Cleanup
+# if($cleanup) rm -rf $tmpdir
+
+# Done
+echo " " |& tee -a $LF
+set tSecEnd = `date '+%s'`;
+@ tSecRun = $tSecEnd - $tSecStart;
+set tRunMin = `echo $tSecRun/60|bc -l`
+set tRunMin = `printf %5.2f $tRunMin`
+set tRunHours = `echo $tSecRun/3600|bc -l`
+set tRunHours = `printf %5.2f $tRunHours`
+echo "Started at $StartTime " |& tee -a $LF
+echo "Ended   at `date`" |& tee -a $LF
+echo "Josareg-Run-Time-Sec $tSecRun" |& tee -a $LF
+echo "Josareg-Run-Time-Min $tRunMin" |& tee -a $LF
+echo "Josareg-Run-Time-Hours $tRunHours" |& tee -a $LF
+echo " " |& tee -a $LF
+echo "josareg Done" |& tee -a $LF
+if($udmade == 0) then
+  echo "INFO: josareg: no changes made" | tee -a $LF
+  # Delete the log file to prevent build up of meaningless logs
+  if(! $LFpassed) rm -f $LF; 
+endif
+
+exit 0
+
+###############################################
+
+############--------------##################
+error_exit:
+echo "ERROR:"
+
+exit 1;
+###############################################
+
+############--------------##################
+parse_args:
+set cmdline = ($argv);
+while( $#argv != 0 )
+
+  set flag = $argv[1]; shift;
+  
+  switch($flag)
+
+    case "--s":
+      if($#argv < 1) goto arg1err;
+      set subject = $argv[1]; shift;
+      breaksw
+
+    case "--surfdir":
+      if($#argv < 1) goto arg1err;
+      set sdir = $argv[1]; shift;
+      breaksw
+
+    case "--o":
+      if($#argv < 1) goto arg1err;
+      set outdir = $argv[1]; shift;
+      set outdirset = 1
+      breaksw
+
+    case "--sd":
+      if($#argv < 1) goto arg1err;
+      setenv SUBJECTS_DIR $argv[1]; shift;
+      breaksw
+
+    case "--threads":
+      if($#argv < 1) goto arg1err;
+      set threads = $argv[1]; shift;
+      breaksw
+
+    case "--hemi":
+      if($#argv < 1) goto arg1err;
+      set hemilist = $argv[1]; shift;
+      breaksw
+    case "--lh":
+      set hemilist = lh
+      breaksw
+    case "--rh":
+      set hemilist = rh
+      breaksw
+
+    case "--sphere-name":
+      if($#argv < 1) goto arg1err;
+      set spherename = $argv[1]; shift;
+      breaksw
+
+    case "--post":
+     set DoPost = 1
+     breaksw
+    case "--no-post":
+     set DoPost = 0
+     breaksw
+
+    case "--links":
+    case "--link":
+      set MakeLinks = 1
+      breaksw
+    case "--no-links":
+    case "--no-link":
+      set MakeLinks = 0
+      breaksw
+
+    case "--force":
+     set ForceUpdate = 1
+     breaksw
+    case "--no-force":
+     set ForceUpdate = 0
+     breaksw
+
+    case "--log":
+      if($#argv < 1) goto arg1err;
+      set LF = $argv[1]; shift;
+      set LFpassed = 1
+      breaksw
+    case "--nolog":
+    case "--no-log":
+      set LF = /dev/null
+      set LFpassed = 1
+      breaksw
+
+    case "--tmp":
+    case "--tmpdir":
+      if($#argv < 1) goto arg1err;
+      set tmpdir = $argv[1]; shift;
+      set cleanup = 0;
+      breaksw
+
+    case "--nocleanup":
+      set cleanup = 0;
+      breaksw
+
+    case "--cleanup":
+      set cleanup = 1;
+      breaksw
+
+    case "--debug":
+      set verbose = 1;
+      set echo = 1;
+      breaksw
+
+    default:
+      echo ERROR: Flag $flag unrecognized. 
+      echo $cmdline
+      exit 1
+      breaksw
+  endsw
+
+end
+
+goto parse_args_return;
+############--------------##################
+
+############--------------##################
+check_params:
+
+if($#subject == 0 && $#sdir == 0) then
+  echo "ERROR: must spec subject and/or sdir"
+  exit 1;
+endif
+
+if($#sdir == 0) set sdir = $SUBJECTS_DIR/$subject/surf
+set ldir = ()
+if($#subject) then
+  set ldir = $SUBJECTS_DIR/$subject/label
+endif
+if($#outdir == 0) set outdir = $sdir/josa
+
+foreach hemi ($hemilist)
+  foreach a (sphere sulc smoothwm inflated inflated.H) #curv can be computed
+    set f = $sdir/$hemi.$a
+    if(! -e $f) then
+      echo "ERROR: cannot find $a"
+      exit 1
+    endif
+  end
+  if($DoPost) then
+    set measlist = (thickness curv) # curv sulc above
+    if($#subject) set measlist = ($measlist aparc)
+    foreach meas ($measlist)
+      if($meas != aparc) set srcmeas = $sdir/$hemi.$meas
+      if($meas == aparc) set srcmeas = $ldir/$hemi.$meas.annot
+      if(! -e $srcmeas) then
+        if($meas == aparc) continue; # might not be there yet
+        echo "ERROR: cannot find $srcmeas needed to do post-processing"
+        exit 1
+      endif
+    end
+  endif
+end
+
+if($MakeLinks) then
+  set warn = 0
+  foreach hemi ($hemilist)
+    set surflist = (sphere.reg)
+    foreach surf ($surflist)
+      set f = $sdir/$hemi.$surf
+      if(-e $f && ! -l $f) then
+        if(! $ForceUpdate) then
+          echo "ERROR: $f exists and is a real file (not symlink)"
+          echo "  This probably means that you have run recon-all before "
+          echo "  Delete these files or run with --force to overwrite them" 
+          exit 1
+        else
+          echo "WARNING: $f exists and is a real file (not symlink)"
+          echo " However, --force was specified, so it will be overwritten"
+          set warm = 1
+        endif
+      endif
+    end
+  end
+  if($warn) sleep 2 # give em a change to ctrl-c
+endif
+
+goto check_params_return;
+############--------------##################
+
+############--------------##################
+arg1err:
+  echo "ERROR: flag $flag requires one argument"
+  exit 1
+############--------------##################
+arg2err:
+  echo "ERROR: flag $flag requires two arguments"
+  exit 1
+############--------------##################
+
+############--------------##################
+usage_exit:
+  echo ""
+  echo "josareg "
+  echo " --s subject or --surfdir surfdir"
+  echo " --sd SUBJECTS_DIR"
+  echo " --threads nthreads"
+  echo " --hemi hemi, --lh, --rh (default is lh and rh)"
+  echo " --o outdir (default is subject/surf/josa)"
+  echo " --post : map thickness, curv, sulc, aparc to template space (good for debugging)"
+  echo " --no-link : do not link final reg to surf/?h.sphere.reg"
+  echo " --sphere-name spherename ($spherename)"
+  echo ""
+
+  if(! $PrintHelp) exit 1;
+  echo $VERSION
+  cat $0 | awk 'BEGIN{prt=0}{if(prt) print $0; if($1 == "BEGINHELP") prt = 1 }'
+exit 1;
+
+#---- Everything below here is printed out as part of help -----#
+BEGINHELP
+

@@ -118,6 +118,7 @@ install_configured(
   isolate_labels.csh
   isolate_labels_keeporigval.csh
   jkgcatrain
+  josareg
   label-cortex
   label_child
   label_elderly_subject
