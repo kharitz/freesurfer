@@ -173,12 +173,12 @@ def register(arg):
     if not len(mov.shape) == len(fix.shape) == 3:
         sf.system.fatal('input images are not single-frame volumes')
 
-    # Transforms between native voxel and network coordinates. Voxel and network
-    # spaces differ for each image. The networks expect isotropic 1-mm LIA spaces.
-    # We center these on the original images, except for deformable registration:
-    # this assumes prior affine registration, so we center the moving network space
-    # on the fixed image, to take into account affine transforms applied by
-    # resampling, updating the header, or passed on the command line alike.
+    # Transforms between native voxel and network coordinates. Voxel and
+    # network spaces differ for each image. The networks expect isotropic 1-mm
+    # LIA spaces. Center these on the original images, except in the deformable
+    # case: it assumes prior affine registration, so we center the moving
+    # network space on the fixed image, to take into account affine transforms
+    # via resampling, updating the header, or passed on the command line alike.
     center = fix if arg.model == 'deform' else None
     net_to_mov, mov_to_net = network_space(mov, shape=in_shape, center=center)
     net_to_fix, fix_to_net = network_space(fix, shape=in_shape)
@@ -189,10 +189,9 @@ def register(arg):
     ras_to_mov = mov.geom.world2vox.matrix
     ras_to_fix = fix.geom.world2vox.matrix
 
-    # Incorporate an initial matrix transform, mapping moving to fixed coordinates,
-    # as FreeSurfer LTAs store the inverse of what you might expect. For mid-space
-    # initialization, compute the matrix square root of the transform between fixed
-    # and moving network space.
+    # Incorporate an initial matrix transform from moving to fixed coordinates,
+    # as LTAs store the inverse. For mid-space initialization, compute the
+    # square root of the transform between fixed and moving network space.
     if arg.init:
         init = sf.load_affine(arg.init).convert(space='voxel')
         if init.ndim != 3 \
@@ -211,10 +210,10 @@ def register(arg):
         net_to_mov = net_to_mov @ tf.linalg.inv(init)
         mov_to_net = np.linalg.inv(net_to_mov)
 
-    # Take the input images to network space. When saving the moving image with the
-    # correct voxel-to-RAS matrix after incorporating an initial matrix transform,
-    # an image viewer taking this matrix into account will show an unchanged image.
-    # However, the networks only see the voxel data, which have been moved.
+    # Take the input images to network space. When saving the moving image with
+    # the correct voxel-to-RAS matrix after incorporating an initial transform,
+    # an image viewer taking this matrix into account will show an unchanged
+    # image. The networks only see the voxel data, which have been moved.
     inputs = (
         transform(mov, net_to_mov, shape=in_shape, normalize=True, batch=True),
         transform(fix, net_to_fix, shape=in_shape, normalize=True, batch=True),
@@ -250,10 +249,10 @@ def register(arg):
     for f in arg.weights:
         load_weights(model, weights=f)
 
-    # Inference. The first transform maps from the moving to the fixed image, or
-    # equivalently, from fixed to moving coordinates. The second is the inverse.
-    # Convert transforms between moving and fixed network spaces to transforms
-    # between the original voxel spaces.
+    # Inference. The first transform maps from the moving to the fixed image,
+    # or equivalently, from fixed to moving coordinates. The second is the
+    # inverse. Convert transforms between moving and fixed network spaces to
+    # transforms between the original voxel spaces.
     fw, bw = map(tf.squeeze, model(inputs))
     fw = vxm.utils.compose((net_to_mov, fw, fix_to_net), shift_center=False, shape=fix.shape)
     bw = vxm.utils.compose((net_to_fix, bw, mov_to_net), shift_center=False, shape=mov.shape)
