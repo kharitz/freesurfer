@@ -228,7 +228,8 @@ def register(arg):
         sf.Volume(inputs[0][0], geom_1).save(inp_1)
         sf.Volume(inputs[1][0], geom_2).save(inp_2)
 
-    # Network.
+    # Network. For deformable-only registration, `HyperVxmJoint` ignores the
+    # `mid_space` argument, and the initialization will determine the space.
     prop = dict(in_shape=in_shape, bidir=True)
     if is_mat:
         prop.update(make_dense=False, rigid=arg.model == 'rigid')
