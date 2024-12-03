@@ -1083,7 +1083,6 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
   COLOR_TABLE *ct;
   int nentries, num_entries_to_read, i;
   int structure, len;
-  char *name;
   int t;
 
   /* Read the number of entries from the stream. Note that this is
@@ -1118,14 +1117,13 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
                  "CTABreadFromBinaryV2: file name length "
                  "was %d",
                  len));
-  name = (char *)malloc(len + 1);
   /* 
    * if the file comes from surfa.io.fsio.write_binary_lookup_table(), len = 0.
    * if the file comes from freesurfer/utils/colortab.cpp::znzCTABwriteIntoBinaryV2(), len > 0.
    */
+  char name[len+1] = {'\0'};
   znzread(name, sizeof(char), len, fp);
   strncpy(ct->fname, name, STRLEN-1);
-  free(name);
 
   /* Read the number of entries to read. */
   num_entries_to_read = znzreadInt(fp);
@@ -1170,9 +1168,9 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
                    structure,
                    len));
     }
-    name = (char *)malloc(len + 1);
-    znzread(name, sizeof(char), len, fp);
-    strncpy(ct->entries[structure]->name, name, STRLEN-1);
+    char struct_name[len+1] = {'\0'};  //(char *)malloc(len + 1);
+    znzread(struct_name, sizeof(char), len, fp);
+    strncpy(ct->entries[structure]->name, struct_name, STRLEN-1);
 
     /* Read in the color. */
     ct->entries[structure]->ri = znzreadInt(fp);
