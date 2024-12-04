@@ -2129,6 +2129,9 @@ MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist, int Force1)
   }
   printf("\n");
 
+  #ifdef HAVE_OPENMP
+  #pragma omp parallel for 
+  #endif
   for(int c=0; c < seg->width; c++){
     for(int r=0; r < seg->height; r++){
       for(int s=0; s < seg->depth; s++){
