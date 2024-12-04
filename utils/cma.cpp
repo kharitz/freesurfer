@@ -2116,7 +2116,7 @@ int SegDice::WriteDiceTable(char *fname)
 MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist)
 {
   int nsegs = segidlist.size();
-  MRI *ohe = MRIallocSequence(seg->width, seg->height, seg->depth, MRI_INT, nsegs);
+  MRI *ohe = MRIallocSequence(seg->width, seg->height, seg->depth, MRI_UCHAR, nsegs);
   if(ohe == NULL) return(NULL);
   MRIcopyHeader(seg,ohe);
   MRIcopyPulseParameters(seg,ohe);

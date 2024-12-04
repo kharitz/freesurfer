@@ -1115,18 +1115,6 @@ static int parse_commandline(int argc, char **argv)
       DoTAR1 = 1;
       nargsused = 1;
     }
-    else if (!strcasecmp(option, "--ohe"))
-      {//Stand-alone --ohe seg ohe segno1 segno2 ...
-      if(nargc < 3) argnerr(option,3);
-      MRI *seg = MRIread(pargv[0]);
-      if(!seg) exit(1);
-      std::vector<int> segidlist;
-      for(int n = 2; n < nargc; n++) segidlist.push_back(atoi(pargv[n]));
-      MRI *ohe = MRIoneHotEncode(seg, segidlist);
-      if(!ohe) exit(1);
-      int err = MRIwrite(ohe,pargv[1]);
-      exit(err);
-    }
     else if (!strcasecmp(option, "--f"))
     {
       if(nargc < 1)
@@ -1236,7 +1224,6 @@ static void print_usage(void)
   printf("   --pca-mask mask  : Only use voxels whose mask > 0.5\n");
   printf("   --scm  : compute spatial covariance matrix (can be huge!)\n");
   printf("   --zconcat bot top nskip out : concat in the slice direction skipping nskip slices of the top\n");
-  printf("   --ohe seg ohe segno1 segno2 ... : stand-alone to convert seg to one-hot-encoded\n");
   printf("\n");
   printf("   --max-bonfcor  : compute max and bonferroni correct (assumes -log10(p))\n");
   printf("   --mul mulval   : multiply by mulval\n");

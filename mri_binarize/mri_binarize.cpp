@@ -977,6 +977,18 @@ static int parse_commandline(int argc, char **argv) {
       DoFDR = 1;
       nargsused = 1;
     } 
+    else if (!strcasecmp(option, "--ohe"))
+      {//Stand-alone --ohe seg ohe segno1 segno2 ...
+      if(nargc < 3) CMDargNErr(option,3);
+      MRI *seg = MRIread(pargv[0]);
+      if(!seg) exit(1);
+      std::vector<int> segidlist;
+      for(int n = 2; n < nargc; n++) segidlist.push_back(atoi(pargv[n]));
+      MRI *ohe = MRIoneHotEncode(seg, segidlist);
+      if(!ohe) exit(1);
+      int err = MRIwrite(ohe,pargv[1]);
+      exit(err);
+    }
     else if(!strcasecmp(option, "--threads") || !strcasecmp(option, "--nthreads") ){
       if(nargc < 1) CMDargNErr(option,1);
       int nthreads=1;
@@ -1334,6 +1346,7 @@ static void print_usage(void) {
   printf("   --threads nthreads (won't apply to replace)\n");
   printf("   --noverbose (default *verbose*) \n");
   printf("   --dilate-vertex vno surf radius outmask : dilate vertex to a target area =pi*R^2 (stand-alone option)\n");
+  printf("   --ohe seg ohe segno1 segno2 ... : stand-alone to convert seg to one-hot-encoded\n");
   printf("\n");
   printf("   --debug     turn on debugging\n");
   printf("   --checkopts don't run anything, just check options and exit\n");
