@@ -628,11 +628,12 @@ get_option(int argc, char *argv[])
     MRI *sum=NULL;
     for(int n=3; n < argc; n++){
       printf("Reading %d/%d %s\n",n-2,ninputs,argv[n]);
+      fflush(stdout);
       if(n==3) {
 	sum = MRIread(argv[n]);
 	if(!sum) exit(1);
 	if(sum->type != MRI_FLOAT){
-	  printf("Changing type to float\n");
+	  printf("   changing type to float\n");
 	  MRI *tmp = MRIchangeType(sum, MRI_FLOAT, 0, 0, 1);
 	  MRIfree(&sum);
 	  sum = tmp;
@@ -660,6 +661,7 @@ get_option(int argc, char *argv[])
 	MRIfree(&mri);
       } // if/else
     } // loop over 
+    fflush(stdout);
     if(!stricmp(option, "simple-average") && ninputs > 1){
       printf("Computing average %d\n",ninputs);
       for(int c=0; c < sum->width; c++){
@@ -673,6 +675,7 @@ get_option(int argc, char *argv[])
 	}
       }
     }
+    fflush(stdout);
     printf("Writing output to %s\n",outvolpath);
     int err = MRIwrite(sum,outvolpath);
     exit(err);
