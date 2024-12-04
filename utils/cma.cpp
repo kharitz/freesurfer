@@ -2113,4 +2113,29 @@ int SegDice::WriteDiceTable(char *fname)
   return(err);
 }
 
+MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist)
+{
+  int nsegs = segidlist.size();
+  MRI *ohe = MRIallocSequence(seg->width, seg->height, seg->depth, MRI_INT, nsegs);
+  if(ohe == NULL) return(NULL);
+  MRIcopyHeader(seg,ohe);
+  MRIcopyPulseParameters(seg,ohe);
+
+  printf("MRIoneHotEncode(): n=%d: ",(int)segidlist.size());
+  for(int n=0; n < nsegs; n++) printf("%d ",segidlist[n]);
+  printf("\n");
+
+
+  for(int c=0; c < seg->width; c++){
+    for(int r=0; r < seg->height; r++){
+      for(int s=0; s < seg->depth; s++){
+	int segid = MRIgetVoxVal(seg,c,r,s,0);
+	for(int n=0; n < nsegs; n++)
+	  if(segid == segidlist[n]) MRIsetVoxVal(ohe,c,r,s,n,1);
+      }
+    }
+  }
+  return(ohe);
+}
+
 /* eof */
