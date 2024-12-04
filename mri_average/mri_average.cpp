@@ -24,6 +24,7 @@
 #include <ctype.h>
 
 #include "mri.h"
+#include "mri2.h"
 #include "macros.h"
 #include "error.h"
 #include "diag.h"
@@ -616,6 +617,66 @@ get_option(int argc, char *argv[])
   {
     usage_exit(0) ;
   }
+  else if(!stricmp(option, "simple-average") || !stricmp(option, "simple-sum")){
+    //0=progname 1=arg 2=outvol 3=invol1 4=invol2 ...
+    if(argc < 4){
+      printf("-simple-average and -simple-sum need at least 2 args (output then invol1 ...)\n");
+      exit(1);
+    }
+    char *outvolpath = argv[2];
+    int ninputs = argc-3;
+    MRI *sum=NULL;
+    for(int n=3; n < argc; n++){
+      printf("Reading %s\n",argv[n]);
+      if(n==3) {
+	sum = MRIread(argv[n]);
+	if(!sum) exit(1);
+	if(sum->type != MRI_FLOAT){
+	  printf("Changing type to float\n");
+	  MRI *tmp = MRIchangeType(sum, MRI_FLOAT, 0, 0, 1);
+	  MRIfree(&sum);
+	  sum = tmp;
+	}
+      }
+      else {
+	MRI *mri = MRIread(argv[n]);
+	if(!mri) exit(1);
+	int err = MRIdimMismatch(sum, mri, 1);
+	if(err) {
+	  printf("ERROR: dimension mismatch\n");
+	  exit(1);
+	}
+	for(int c=0; c < sum->width; c++){
+	  for(int r=0; r < sum->height; r++){
+	    for(int s=0; s < sum->depth; s++){
+	      for(int f=0; f < sum->nframes; f++){
+		double v0 = MRIgetVoxVal(sum,c,r,s,f);
+		double v = MRIgetVoxVal(mri,c,r,s,f);
+		MRIsetVoxVal(sum,c,r,s,f,v0+v);
+	      }
+	    }
+	  }
+	}
+	MRIfree(&mri);
+      } // if/else
+    } // loop over 
+    if(!stricmp(option, "simple-average") && ninputs > 1){
+      printf("Computing average %d\n",ninputs);
+      for(int c=0; c < sum->width; c++){
+	for(int r=0; r < sum->height; r++){
+	  for(int s=0; s < sum->depth; s++){
+	    for(int f=0; f < sum->nframes; f++){
+	      double v = MRIgetVoxVal(sum,c,r,s,f);
+	      MRIsetVoxVal(sum,c,r,s,f,v/ninputs);
+	    }
+	  }
+	}
+      }
+    }
+    printf("Writing output to %s\n",outvolpath);
+    int err = MRIwrite(sum,outvolpath);
+    exit(err);
+  }
   else if (!stricmp(option, "noconform"))
   {
     conform = 0 ;
@@ -715,6 +776,8 @@ usage_exit(int code)
   printf("\t-p              compute %% \n");
   printf("\t-b <float th>   binarize the input volumes using threshold th \n");
   printf("\t-abs            take abs value of volume \n");
+  printf("\t-simple-sum outvol invol1 invol2 ... : stand-alone option to compute the sum\n");
+  printf("\t-simple-average outvol invol1 invol2 ... : stand-alone option to compute the average\n");
   exit(code) ;
 }
 
