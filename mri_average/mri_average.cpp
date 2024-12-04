@@ -627,7 +627,7 @@ get_option(int argc, char *argv[])
     int ninputs = argc-3;
     MRI *sum=NULL;
     for(int n=3; n < argc; n++){
-      printf("Reading %s\n",argv[n]);
+      printf("Reading %d/%d %s\n",n-2,ninputs,argv[n]);
       if(n==3) {
 	sum = MRIread(argv[n]);
 	if(!sum) exit(1);
