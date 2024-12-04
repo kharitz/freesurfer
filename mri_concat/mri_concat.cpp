@@ -1062,15 +1062,16 @@ static int parse_commandline(int argc, char **argv)
       maskfile = pargv[0];
       nargsused = 1;
     }
-    else if ( !strcmp(option, "--mul") ){
+    else if ( !strcmp(option, "--mul") || !strcmp(option, "--div") ){
       if (nargc < 1)argnerr(option,1);
       if(! isdigit(pargv[0][0]) && pargv[0][0] != '-' && 
 	 pargv[0][0] != '+' && pargv[0][0] != '.'){
-        printf("ERROR: value passed to the --mul flag must be a number\n");
+        printf("ERROR: value passed to the --mul or or --div option must be a number\n");
         printf("       If you want to multiply two images, use fscalc\n");
         exit(1);
       }
       sscanf(pargv[0],"%lf",&MultiplyVal);
+      if(!strcmp(option, "--div") ) MultiplyVal = 1.0/MultiplyVal;
       DoMultiply = 1;
       nargsused = 1;
     }
@@ -1227,6 +1228,7 @@ static void print_usage(void)
   printf("\n");
   printf("   --max-bonfcor  : compute max and bonferroni correct (assumes -log10(p))\n");
   printf("   --mul mulval   : multiply by mulval\n");
+  printf("   --div divval   : divide by divval\n");
   printf("   --add addval   : add addval\n");
   printf("\n");
   printf("   --mask maskfile : mask used with --vote or --sort\n");
