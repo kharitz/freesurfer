@@ -34,6 +34,7 @@
 #include "utils.h"
 #include "timer.h"
 #include "version.h"
+#include "romp_support.h"
 
 int main(int argc, char *argv[]) ;
 static int get_option(int argc, char *argv[]) ;
@@ -578,6 +579,14 @@ get_option(int argc, char *argv[])
     fprintf
     (stderr, "computing sqrt of sum of squares instead of average (RMS)...\n") ;
   }
+  else if (!stricmp(option, "threads"))
+  {
+    int nthreads = atoi(argv[2]) ;
+    #ifdef _OPENMP
+    omp_set_num_threads(nthreads);
+    #endif
+    nargs = 1 ;
+  }
   else if (!stricmp(option, "conform"))
   {
     conform = 1 ;
@@ -647,6 +656,9 @@ get_option(int argc, char *argv[])
 	  printf("ERROR: dimension mismatch\n");
 	  exit(1);
 	}
+        #ifdef HAVE_OPENMP
+        #pragma omp parallel for 
+        #endif
 	for(int c=0; c < sum->width; c++){
 	  for(int r=0; r < sum->height; r++){
 	    for(int s=0; s < sum->depth; s++){
@@ -779,6 +791,7 @@ usage_exit(int code)
   printf("\t-p              compute %% \n");
   printf("\t-b <float th>   binarize the input volumes using threshold th \n");
   printf("\t-abs            take abs value of volume \n");
+  printf("\t-threads nthreads \n");
   printf("\t-simple-sum outvol invol1 invol2 ... : stand-alone option to compute the sum\n");
   printf("\t-simple-average outvol invol1 invol2 ... : stand-alone option to compute the average\n");
   exit(code) ;
