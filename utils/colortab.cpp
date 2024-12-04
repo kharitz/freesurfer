@@ -1121,9 +1121,10 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
    * if the file comes from surfa.io.fsio.write_binary_lookup_table(), len = 0.
    * if the file comes from freesurfer/utils/colortab.cpp::znzCTABwriteIntoBinaryV2(), len > 0.
    */
-  char name[len+1] = {'\0'};
-  znzread(name, sizeof(char), len, fp);
-  strncpy(ct->fname, name, STRLEN-1);
+  int toread = (len < STRLEN-1) ? len : STRLEN-1;
+  znzread(ct->fname, sizeof(char), toread, fp);
+  if (Gdiag & DIAG_INFO)
+    printf("[DEBUG] znzCTABreadFromBinaryV2(): fname = '%s' (%d bytes)\n", ct->fname, toread); 
 
   /* Read the number of entries to read. */
   num_entries_to_read = znzreadInt(fp);
@@ -1168,9 +1169,8 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
                    structure,
                    len));
     }
-    char struct_name[len+1] = {'\0'};  //(char *)malloc(len + 1);
-    znzread(struct_name, sizeof(char), len, fp);
-    strncpy(ct->entries[structure]->name, struct_name, STRLEN-1);
+    toread = (len < STRLEN-1) ? len : STRLEN-1;
+    znzread(ct->entries[structure]->name, sizeof(char), toread, fp);
 
     /* Read in the color. */
     ct->entries[structure]->ri = znzreadInt(fp);
@@ -1693,6 +1693,9 @@ int CTABprintASCII(COLOR_TABLE *ct, FILE *fp)
 
   if (NULL == ct) ErrorReturn(ERROR_BADPARM, (ERROR_BADPARM, "CTABprintASCII: ct was NULL"));
   if (NULL == fp) ErrorReturn(ERROR_BADPARM, (ERROR_BADPARM, "CTABprintASCII: fp was NULL"));
+
+  if (Gdiag & DIAG_INFO)
+    printf("[DEBUG] CTABprintASCII(): fname = '%s' (%lu bytes)\n", ct->fname, strlen(ct->fname));
 
   for (structure = 0; structure < ct->nentries; structure++) {
     if (NULL != ct->entries[structure]) {
