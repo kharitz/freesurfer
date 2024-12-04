@@ -2113,7 +2113,7 @@ int SegDice::WriteDiceTable(char *fname)
   return(err);
 }
 
-MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist)
+MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist, int Force1)
 {
   int nsegs = segidlist.size();
   MRI *ohe = MRIallocSequence(seg->width, seg->height, seg->depth, MRI_UCHAR, nsegs);
@@ -2121,17 +2121,32 @@ MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist)
   MRIcopyHeader(seg,ohe);
   MRIcopyPulseParameters(seg,ohe);
 
-  printf("MRIoneHotEncode(): n=%d: ",(int)segidlist.size());
-  for(int n=0; n < nsegs; n++) printf("%d ",segidlist[n]);
+  printf("MRIoneHotEncode(): n=%d Force1=%d: ",(int)segidlist.size(),Force1);
+  int segno0 = -1;
+  for(int n=0; n < nsegs; n++){
+    printf("%d ",segidlist[n]);
+    if(segidlist[n] == 0) segno0=n;
+  }
   printf("\n");
-
 
   for(int c=0; c < seg->width; c++){
     for(int r=0; r < seg->height; r++){
       for(int s=0; s < seg->depth; s++){
 	int segid = MRIgetVoxVal(seg,c,r,s,0);
-	for(int n=0; n < nsegs; n++)
-	  if(segid == segidlist[n]) MRIsetVoxVal(ohe,c,r,s,n,1);
+	int hit = 0;
+	for(int n=0; n < nsegs; n++){
+	  if(segid == segidlist[n]){
+	    MRIsetVoxVal(ohe,c,r,s,n,1);
+	    hit = 1;
+	    break;
+	  }
+	}
+	// In the case that the segid of this voxel does not match one
+	// from the list (ie, hit=0) AND one of the segids is 0
+	// (segno0 != -1) and Force1 is set, then set the segid=0
+	// frame to 1.  This assures that each voxel has a value of 1
+	// in one of the frames.
+	if(hit == 0 && segno0 != -1 && Force1) MRIsetVoxVal(ohe,c,r,s,segno0,1);
       }
     }
   }
