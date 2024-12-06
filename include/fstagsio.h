@@ -37,7 +37,7 @@ public:
   static long long getlen_matrix(bool niftiheaderext, bool addtaglength=true);
   static long long getlen_old_colortable(COLOR_TABLE *ctab, bool niftiheaderext=false, bool addtaglength=true);
   static long long getlen_mri_frames(MRI *mri, bool niftiheaderext=false, bool addtaglength=true);
-  static long long getlen_gcamorph_geom(const char *source_fname, const char *target_fname, bool niftiheaderext=false, bool addtaglength=true);
+  static long long getlen_gcamorph_geom(const char *source_fname, const char *target_fname, bool niftiheaderext=false, bool addtaglength=true, bool shearless=true);
   static long long getlen_gcamorph_meta(bool addtaglength=true);
   static long long getlen_gcamorph_labels(int x, int y, int z, int len, bool niftiheaderext=false, bool addtaglength=true);
   static long long getlen_dof(int dof, bool addtaglength=true);
@@ -51,7 +51,7 @@ public:
   int write_old_colortable(COLOR_TABLE *ctab);
   int write_mri_frames(MRI *mri);
   
-  int write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target);
+  int write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shearless=true);
   int write_gcamorph_meta(int warpFieldFormat, int gcamorphSpacing, double gcamorphExp_k);
   int write_gcamorph_labels(int x, int y, int z, int ***gcamorphLabel);  
 
@@ -75,7 +75,7 @@ public:
   COLOR_TABLE* read_old_colortable();
   int read_mri_frames(MRI *mri, long long len);
   
-  int read_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target);
+  int read_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shearless=true);
   int read_gcamorph_meta(int *warpFieldFormat, int *gcamorphSpacing, double *gcamorphExp_k);
   int read_gcamorph_labels(int x0, int y0, int z0, int ***gcamorphLabel);
 

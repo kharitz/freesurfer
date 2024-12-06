@@ -197,6 +197,7 @@ struct VOL_GEOM
   float y_r =  0, y_a = 0, y_s = -1;
   float z_r =  0, z_a = 1, z_s =  0;
   float c_r =  0, c_a = 0, c_s =  0;
+  float s_r =  0, s_a = 0, s_s =  0;  // the shear components
   char  fname[STRLEN] = {'\0'};  // volume filename
 
   // i_to_r__, r_to_i__, register_mat were moved here from MRI in this commit:
@@ -241,6 +242,9 @@ struct VOL_GEOM
     c_r = vg.c_r;
     c_a = vg.c_a;
     c_s = vg.c_s;
+    s_r = vg.s_r;
+    s_a = vg.s_a;
+    s_s = vg.s_s;    
     
     strcpy(fname, vg.fname);
 
@@ -275,6 +279,9 @@ struct VOL_GEOM
     c_r = other.c_r;
     c_a = other.c_a;
     c_s = other.c_s;
+    s_r = other.s_r;
+    s_a = other.s_a;
+    s_s = other.s_s;    
     
     strcpy(fname, other.fname);
 
@@ -299,6 +306,7 @@ struct VOL_GEOM
       fprintf(stdout, "y_(ras) : (%7.4f, %7.4f, %7.4f)\n", y_r, y_a, y_s);
       fprintf(stdout, "z_(ras) : (%7.4f, %7.4f, %7.4f)\n", z_r, z_a, z_s);
       fprintf(stdout, "c_(ras) : (%7.4f, %7.4f, %7.4f)\n", c_r, c_a, c_s);
+      fprintf(stdout, "shears  : (%7.4f, %7.4f, %7.4f)\n", s_r, s_a, s_s);      
       fprintf(stdout, "file    : %s\n", fname);
     }
     else
@@ -339,11 +347,14 @@ struct VOL_GEOM
     if (!FZEROTHR(vg1->c_r - vg2->c_r, thresh)) return (17);
     if (!FZEROTHR(vg1->c_a - vg2->c_a, thresh)) return (18);
     if (!FZEROTHR(vg1->c_s - vg2->c_s, thresh)) return (19);
+    if (!FZEROTHR(vg1->s_r - vg2->s_r, thresh)) return (20);
+    if (!FZEROTHR(vg1->s_a - vg2->s_a, thresh)) return (21);
+    if (!FZEROTHR(vg1->s_s - vg2->s_s, thresh)) return (22);    
     return (0);
   };
 
   // write VOL_GEOM to znzFile
-  void write(znzFile fp, bool niftiheaderext=false)
+  void write(znzFile fp, bool niftiheaderext=false, bool shearless=true)
   {
     znzwriteInt(valid, fp);
     znzwriteInt(width, fp);
@@ -364,6 +375,12 @@ struct VOL_GEOM
     znzwriteFloat(c_r, fp);
     znzwriteFloat(c_a, fp);
     znzwriteFloat(c_s, fp);
+    if (!shearless)
+    {
+      znzwriteFloat(s_r, fp);
+      znzwriteFloat(s_a, fp);
+      znzwriteFloat(s_s, fp);      
+    }
 
     int len_max = 512;    
     if (!niftiheaderext)
@@ -387,7 +404,7 @@ struct VOL_GEOM
   }
 
   // read VOL_GEOM from znzFile
-  void read(znzFile fp, bool niftiheaderext=false)
+  void read(znzFile fp, bool niftiheaderext=false, bool shearless=true)
   {
     valid = znzreadInt(fp);
     width = znzreadInt(fp);
@@ -408,6 +425,12 @@ struct VOL_GEOM
     c_r = znzreadFloat(fp);
     c_a = znzreadFloat(fp);
     c_s = znzreadFloat(fp);
+    if (!shearless)
+    {
+      s_r = znzreadFloat(fp);
+      s_a = znzreadFloat(fp);
+      s_s = znzreadFloat(fp);      
+    }
 
     int len_max = 512;
     if (!niftiheaderext)

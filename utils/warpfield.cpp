@@ -14,12 +14,13 @@
  *   3. writes warp in mgz format (version = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION).
  *
  * The warp file follows mgz format with these tags:
- *   TAG_GCAMORPH_GEOM   followed by gcamorph image (source) geom and gcamorph atlas (target) geom
- *   TAG_GCAMORPH_META   followed by data-length, 
+ *   TAG_GCAMORPH_GEOM             followed by gcamorph image (source) geom and gcamorph atlas (target) geom
+ *   TAG_GCAMORPH_GEOM_PLUSSHEAR   followed by outputs under TAG_GCAMORPH_GEOM + shear components for image (source) geom and atlas (target) geom
+ *   TAG_GCAMORPH_META             followed by data-length, 
  *         WARPFIELD_DTFMT_ABS_CRS|WARPFIELD_DTFMT_DISP_CRS|WARPFIELD_DTFMT_ABS_RAS|WARPFIELD_DTFMT_DISP_RAS
  *         spacing (int)
  *         exp_k   (double)
- *   TAG_GCAMORPH_AFFINE followed by data-length (1600), matrix data
+ *   TAG_GCAMORPH_AFFINE           followed by data-length (1600), matrix data
  * 
  * The data array (width x height x depth x nframes) is indexed by atlas CRS.
  *     frame 0 - image voxel ABS coordinate C, image voxel DISP coordinate C, 
