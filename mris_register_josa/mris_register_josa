@@ -1,188 +1,145 @@
+import logging
 import os
+
+logging.disable(logging.WARNING)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 import sys
-import pathlib
 from argparse import ArgumentParser
-from os.path import exists
-from os.path import join as pj
+from pathlib import Path
 
 import surfa as sfa
+import numpy as np
+import tensorflow as tf
 from spheremorph.py.utils import norm_curvature
-from spheremorph.tf.networks import JOSA
-from spheremorph.tf.utils import *
+from spheremorph.tf.utils import pad_2d_image_spherically, unpad_2d_image
+from spheremorph.tf.utils.models import spm_geom_model
 
 
 def main():
-    parser = ArgumentParser(prog="JOSA", description="Learning-based surface registration and parcellation")
-    parser.add_argument("--hmsp", type=str, help="which hemisphere, lh or rh")
-    parser.add_argument("--sub_dir", type=str, help="path to subject directory (does not use $SUBJECTS_DIR)")
-    parser.add_argument("--sulc_file", type=str, help="path to ?h.sulc file, overrides surf_dir/?h.sulc")
-    parser.add_argument("--curv_file", type=str, help="path to ?h.curv file, overrides surf_dir/?h.curv")
-    parser.add_argument("--inflated_curv_file", type=str,help="path to ?h.inflated.H file, overrides surf_dir/?h.inflated.H")
-    parser.add_argument("--sphere_rot", type=str,help="path to ?h.sphere.rot file")
-    parser.add_argument("--model", type=str,help="path to the model file")
-    parser.add_argument("--output", type=str,help="custom output file, default is to save to subject/surf/hemi.sphere.reg")
-    parser.add_argument('--threads', type=int, default=1, help='Number of threads to use. Default is 1.')
-    args = vars(parser.parse_args())
+    parser = ArgumentParser(prog='JOSA', description='Learning-based surface registration', conflict_handler='resolve')
+
+    # mandatory input arguments
+    parser.add_argument('-h', '--hmsp', type=str, choices=['lh', 'rh'], help='which hemisphere, lh or rh')
+    parser.add_argument('-a', '--arch', type=str, choices=['spm2000'], default='spm2000', help='network architecture')
+    parser.add_argument('-m', '--model', type=Path, default='', help='path to the model weights file')
+    parser.add_argument('-s', '--subject_dir', type=Path, default=None,
+                        help='path to subject directory (does not use $SUBJECTS_DIR)')
+    parser.add_argument('-o', '--output', type=str, default=None,
+                        help='custom output file, default is to save to subject/surf/hemi.sphere.reg')
+
+    # optional inputs for overriding, not needed if subject_dir follows freesurfer directory structure
+    parser.add_argument('-S', '--sulc', type=Path, default=None,
+                        help='path to ?h.sulc file, overrides surf_dir/?h.sulc')
+    parser.add_argument('-C', '--curv', type=Path, default=None,
+                        help='path to ?h.curv file, overrides surf_dir/?h.curv')
+    parser.add_argument('-H', '--inflated_curv', type=Path, default=None,
+                        help='path to ?h.inflated.H file, overrides surf_dir/?h.inflated.H')
+    parser.add_argument('-t', '--sphere_rot', type=Path, default=None, help='path to ?h.sphere.rot file')
+
+    # other optional arguments
+    parser.add_argument('-T', '--threads', type=int, default=1, help='number of threads to use. default is 1.')
+    args = parser.parse_args()
 
     # check for no arguments
     if len(sys.argv) < 2:
         parser.print_help()
         sys.exit(1)
 
-    model_file = args['model']
-    if model_file is None:
-        raise ValueError('model file must be provided')
+    hmsp = args.hmsp  # exception handled in parser
+    model_file = Path(args.model)
+    if not model_file.exists():
+        raise ValueError('model file does not exist')
 
-    # first argument for hemisphere must be provided
-    if args['hmsp'] and args['hmsp'] in ['lh', 'rh']:
-        hmsp = args['hmsp']
+    if args.subject_dir is None:
+        if args.output is None:
+            raise ValueError('output file must be specified if subject_dir is not provided')
+        subject_dir = Path('')
     else:
-        raise ValueError('hmsp must be lh or rh')
+        subject_dir = Path(args.subject_dir)
 
-    # Check whether subject is needed 
-    NeedSubject=0
-    if(args['sulc_file'] is None or args['curv_file'] is None or args['inflated_curv_file'] is None or args['sphere_rot'] is None or args['output'] is None): NeedSubject=1
+    surf_dir = Path(subject_dir / 'surf')
+    sulc_file = Path(surf_dir / f'{hmsp}.sulc')
+    curv_file = Path(surf_dir / f'{hmsp}.curv')
+    inf_h_file = Path(surf_dir / f'{hmsp}.inflated.H')
+    sphere_rot_file = Path(surf_dir / f'{hmsp}.sphere.rot')
 
-    sub_dir = args['sub_dir']
-    if(NeedSubject):
-        if(sub_dir is None):
-            raise ValueError('subject dir needed unless all curv, inflated, sulc, sphere.rot, and outdir are specified')        
-        surf_dir = pj(sub_dir, 'surf')
-        if not exists(surf_dir):
-            raise ValueError('surf directory could be found in subject directory')
+    # override with sulc, curv, inflated.H files if specified
+    if args.sulc:
+        sulc_file = Path(args.sulc)
+    if args.curv:
+        curv_file = Path(args.curv)
+    if args.inflated_curv:
+        inf_h_file = Path(args.inflated_curv)
+    if args.sphere_rot:
+        sphere_rot_file = Path(args.sphere_rot)
 
-    if(args['sulc_file']):
-        sulc_file = args['sulc_file']
-    else:
-        sulc_file = pj(surf_dir, f'{hmsp}.sulc')
-
-    if(args['curv_file']):
-        curv_file = args['curv_file']
-    else:
-        curv_file = pj(surf_dir, f'{hmsp}.curv')
-
-    if(args['inflated_curv_file']):
-        inf_h_file = args['inflated_curv_file']
-    else:
-        inf_h_file = pj(surf_dir, f'{hmsp}.inflated.H')
-
-    if(args['sphere_rot']):
-        sphere_rot_file = args['sphere_rot']
-    else:
-        sphere_rot_file = pj(surf_dir, f'{hmsp}.sphere.rot')
-
-    # Make sure all inputs exist
     for f in [sulc_file, curv_file, inf_h_file, sphere_rot_file]:
-        print(f'{f}');
-        if not exists(f):
-            raise ValueError(f'ERROR: cannot find {f}')
+        if not f.exists():
+            raise FileNotFoundError(f'{f} not found')
 
-    out_file_fixed = args['output']
-    if out_file_fixed is None:
-        out_file_fixed = pj(surf_dir, f'{hmsp}.sphere.reg')
-    output_dir = os.path.dirname(out_file_fixed);
-    out_file_prefix = out_file_fixed+".prefixed";
-    print(f'prefix file {out_file_prefix}');
-    print(f'output file {out_file_fixed}');
-    print(f'model file {model_file}');
+    out_file_fixed = args.output
+    if out_file_fixed is None:  # surf_dir must exist at this point
+        out_file_fixed = Path(surf_dir) / f'{hmsp}.sphere.reg'
+    else:
+        out_file_fixed = Path(out_file_fixed)
 
-    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    surf_feature_file = [sulc_file, curv_file, inf_h_file]
+    output_dir = out_file_fixed.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_file_prefix = Path(f'{out_file_fixed}.prefixed')
+    print(f'prefix file {out_file_prefix}')
+    print(f'output file {out_file_fixed}')
+    print(f'model file {model_file}')
 
     # set number of threads
-    print('Using %d thread(s)' % args['threads'])
-    tf.config.threading.set_inter_op_parallelism_threads(args['threads']);
+    print('Using %d thread(s)' % args.threads)
+    tf.config.threading.set_inter_op_parallelism_threads(args.threads)
 
-    # ==================== changes from here ====================
-    pad_size = 16
+    # ==================== processing starts from here ====================
     print('parameterizing cortical features ... ', end='')
+    surf_feature_file = [sulc_file, curv_file, inf_h_file]
     geoms = list()
     for file_name in surf_feature_file:
-        geom = sfa.load_overlay(file_name)
-        geom2 = norm_curvature(geom, which_norm='Median')
-        geoms.append(geom2)
-    geoms = np.stack(geoms, axis=1)
+        geoms.append(sfa.load_overlay(str(file_name)))
+    geoms_norm = [norm_curvature(x, which_norm='Median') for x in geoms]
+    geoms_norm = np.stack(geoms_norm, axis=1)
 
-    sphere = sfa.load_mesh(sphere_rot_file)
-    mrisp_geom = sfa.sphere.SphericalMapBarycentric(sphere).parameterize(geoms)
-    mrisp_geom = mrisp_geom.framed_data
-    mrisp_geom = (mrisp_geom - mrisp_geom.mean()) / mrisp_geom.std()
-    mrisp_geom_padded = pad_2d_image_spherically(mrisp_geom, pad_size=pad_size, input_no_batch_dim=True)
+    sphere_rot = sfa.load_mesh(str(sphere_rot_file))
+    pad_size = 16
+
+    mrisp_geom_norm = sfa.sphere.SphericalMapBarycentric(sphere_rot).parameterize(geoms_norm).framed_data
+    mrisp_geom_norm = (mrisp_geom_norm - mrisp_geom_norm.mean()) / mrisp_geom_norm.std()
+    mrisp_geom_norm_padded = pad_2d_image_spherically(mrisp_geom_norm[np.newaxis, ...], pad_size)
     print('done')
 
     print('constructing the network ... ', end='')
-    net_factor = 7
-    is_bidir = True
-    is_atlas_trainable = False
-    is_semi = True
-    is_isw = True
-    is_njf = True
-    pos_enc = 4
-    num_outputs = 8
-    losses = [dummy_loss] * num_outputs
-    metrics = [None] * num_outputs
-    metric_name = [None] * num_outputs
-    img_shape = mrisp_geom_padded.shape[0:2]
-    num_geom_ft = 3
-    num_parc_ft = 32
-    img_shape_ft = [(*img_shape, num_geom_ft), (*img_shape, num_parc_ft)]
-
-    if net_factor == 0:
-        unet_struct = [
-            [128, 256, 384, 512, 640],  # encoder
-            [640, 512, 384, 256, 128, 64, 32]  # decoder
-        ]
+    if args.arch == 'spm2000':
+        model = spm_geom_model(Path(args.model))
     else:
-        nf = 2 ** net_factor
-        unet_struct = [[nf, ] * 5, [nf, ] * 7]
-
-    model = JOSA(input_shape_ft=img_shape_ft, nb_unet_features=unet_struct,
-                 loss_fn=losses, metric_fn=metrics, metric_name=metric_name,
-                 is_bidir=is_bidir, int_steps=5, int_method='ss',
-                 pad_size=pad_size, pos_enc=pos_enc,
-                 is_semi=is_semi, is_atlas_trainable=is_atlas_trainable,
-                 input_type=['float', 'prob'], is_isw=is_isw,
-                 is_softmax=True, is_jacobian=True, is_neg_jacobian_filter=is_njf)
+        raise ValueError(f'network architecture {args.arch} not supported')
     print('done')
 
-    print('loading the model ... ', end='')
-    model.load_weights(model_file)
-    print('done')
-
-    print('registering to the atlas ... ')
-    param_coord = sfa.sphere.SphericalMapBarycentric(sphere).parameterize(sphere.vertices)
-    param_coord_padded = pad_2d_image_spherically(param_coord[np.newaxis, ...], pad_size)
-    warped_param_coord = model.warp(mrisp_geom_padded[np.newaxis, ...], param_coord_padded, 'to_subject', 0)
-    warped_param_coord_unpad = unpad_2d_image(warped_param_coord[0, :, :, :], pad_size, input_no_batch_dim=True)
+    print('registering to the atlas ... ', end='')
+    mrisp_coord = sfa.sphere.SphericalMapBarycentric(sphere_rot).parameterize(sphere_rot.vertices)
+    mrisp_coord_padded = pad_2d_image_spherically(mrisp_coord[np.newaxis, ...], pad_size)
+    warped_mrisp_coord = model.warp(mrisp_geom_norm_padded, mrisp_coord_padded, 'to_subject', idx=0)
+    warped_mrisp_coord_unpad = unpad_2d_image(warped_mrisp_coord, pad_size)[0, :, :, :]
     print('done')
 
     print('saving sphere.reg to disk ... ', end='')
-    v = sfa.sphere.SphericalMapBarycentric(sphere).sample(warped_param_coord_unpad)
+    v = sfa.sphere.SphericalMapBarycentric(sphere_rot).sample(warped_mrisp_coord_unpad)
     v = v / np.linalg.norm(v, axis=-1, keepdims=True) * 100.0
-    sphere_reg = sphere.copy()
+    sphere_reg = sphere_rot.copy()
     sphere_reg.vertices = v
-    sfa.io.mesh.save_mesh(sphere_reg, out_file_prefix)
+    sfa.io.mesh.save_mesh(sphere_reg, str(out_file_prefix))
     print('done')
 
-    print('removing intersecting vertices ... ')
-    # cmd = f'source /autofs/homes/003/jl1013/.fs_env && mris_remove_intersection {out_file} {out_file_fixed}'
+    print('removing intersecting vertices ... ', end='')
     cmd = f'mris_remove_intersection {out_file_prefix} {out_file_fixed}'
     os.system(cmd)
-    os.remove(out_file_prefix)
+    os.remove(str(out_file_prefix))
     print('done')
 
 
-# the following dummy functions are created specifically for this release
-def dummy_loss(*args):
-    if len(args) == 1:
-        y_pred = args[0]
-    elif len(args) == 2:
-        _, y_pred = args
-    else:
-        y_pred = 0
-    return tf.reduce_mean(y_pred)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

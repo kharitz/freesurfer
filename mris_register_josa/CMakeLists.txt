@@ -1,13 +1,13 @@
 project(mris_register_josa)
 
 if (FSPYTHON_INSTALL_TREE)
-   set(mri_synthsr_dest "\.\./fspython/models")
+   set(mris_register_josa_dest "\.\./fspython/models")
 else()
-   set(mri_synthsr_dest "models")
+   set(mris_register_josa_dest "models")
 endif()
 
-install(FILES mris_register_josa_20240401_rh.h5 DESTINATION ${mri_synthsr_dest})
-install(FILES mris_register_josa_20240401_lh.h5 DESTINATION ${mri_synthsr_dest})
+install(FILES mris_register_josa_20241121_lh.h5 DESTINATION ${mris_register_josa_dest})
+install(FILES mris_register_josa_20241121_rh.h5 DESTINATION ${mris_register_josa_dest})
 
 if (FSPYTHON_INSTALL_TREE)
    install_pyscript_fspython_tree(mris_register_josa)
