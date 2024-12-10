@@ -19,12 +19,10 @@ Scientific Reports, 13 (2023): 6657.
 
 ## Prerequisites:
 
-This code requires a modern version of FreeSurfer (7.4.0 or newer), which must be sourced before running the code.
-
 The first time you run the method, it will prompt you to download the atlas files, which are not distributed with the code.
 
 
-## Usage for 'full' Bayesian version (slow):
+## Usage for 'full' Bayesian version (slow, not recommended):
 
 To run the code, please use the script segment.sh as follows:
 
@@ -75,20 +73,33 @@ You can visualize the output by CDing into the results directory and running the
 
 freeview -v bf_corrected.mgz -v seg_left.mgz:colormap=lut:lut=lookup_table.txt -v seg_right.mgz:colormap=lut:lut=lookup_table.txt
  
-## Alternative 'fast' version:
+## Alternative 'fast' versions:
 
-We also distribute a fast version, where the atlas deformation is pre-computed with a neural network,
+We also distribute two faster version, where the atlas deformation is pre-computed
 and then kept constant during the optimization, such that we only need to run the EM algorithm once for
 the Gaussian parameters and that is it.
 
+There are two sub-versions. One uses FireANTs (Jena et al., https://arxiv.org/abs/2404.01249) to register to the target
+scan a fake cartoon derived from the atlas. This version actively tries to fit smaller structures and
+subregions. The command line is:
+
+mri_histo_atlas_segment_fireants INPUT_SCAN OUTPUT_DIRECTORY GPU THREADS [BF_MODE]
+
+The other version uses SynthMorph (Hoffmann et al., Imaging Neuroscience, 2024), a neural network for 
+image registration. This version is faster and does OK for 1mm isotropic scans. However, SynthMorph 
+relies heavily on fitting the boundaries of whole structures and does not the map smaller regions 
+as well (e.g., thalamic nuclei). Therefore, we do not recommend it for images with resolution better 
+than 1mm isotropic (e.g., ex vivo scans).
+
 mri_histo_atlas_segment_fast INPUT_SCAN OUTPUT_DIRECTORY GPU THREADS [BF_MODE]
 
-The options are similar to mri_histo_atlas_segment, but the atlas and gmm modes are always 'simplified' and '1mm', respectively. 
+For both commands, the options are similar to mri_histo_atlas_segment, but the atlas and gmm modes are always 'simplified' and '1mm', respectively. 
 The output files in the output directory follow the same convention.
 
-This faster version is particularly useful if you are running the code on the CPU rather than CPU. 
-On a semi-modern desktop, the run time should be less than an hour (note that it segments both 
-hemispheres in a single run, as opposed to the full Bayesian version).
+These faster versions are particularly useful if you are running the code on the CPU rather than CPU. 
+On a semi-modern desktop, the run time should be less than an hour; note that mri_histo_atlas_segment_fireants
+runs once per hemisphere, whhile mri_histo_atlas_segment_fast segments both hemispheres in a single run.
+
 
 
 
