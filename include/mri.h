@@ -1010,6 +1010,7 @@ MRI   *MRIsetEdges(MRI *in, double SetVal, MRI *out);
 MRI   *MRIerode(MRI *mri_src, MRI *mri_dst) ;
 MRI   *MRIerodeNN(MRI *in, MRI *out, int NNDef, int ErodeEdges=0);
 MRI   *MRIerodeLabels(MRI *mri_src, MRI *mri_dst) ;
+MRI *MRIerodeAndReplaceLabel(MRI *seg, int segid, int replaceid, int topo, int iters, MRI *out);
 MRI   *MRIerodeThresh(MRI *mri_src, MRI *mri_intensity, double thresh,MRI *mri_dst) ;
 MRI   *MRIdilate6Thresh(MRI *mri_src, MRI *mri_intensity, double thresh, MRI *mri_dst) ;
 MRI   *MRIdilateThresh(MRI *mri_src, MRI *mri_intensity, double thresh, MRI *mri_dst) ;

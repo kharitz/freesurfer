@@ -655,6 +655,75 @@ MRI *MRIerodeLabels(MRI *mri_src, MRI *mri_dst)
   }
   return (mri_dst);
 }
+MRI *MRIerodeAndReplaceLabel(MRI *seg, int segid, int replaceid, int topo, int iters, MRI *out)
+{
+  if(iters > 1) {
+    printf("MRIerodeAndReplaceLabel() segid=%d replace=%d topo=%d niters=%d\n",segid,replaceid,topo,iters);
+    for(int n=0; n < iters; n++){
+      printf("  iter %d\n",n);
+      if(n == 0) out = MRIerodeAndReplaceLabel(seg, segid, replaceid, topo, 1, out);
+      else       out = MRIerodeAndReplaceLabel(out, segid, replaceid, topo, 1, out);
+      if(out == NULL) return(NULL);
+    }
+    return(out);    
+  }
+
+  if(out == NULL){
+    out = MRIalloc(seg->width,seg->height,seg->depth,MRI_INT);
+    MRIcopyHeader(seg,out);
+    MRIcopyPulseParameters(seg,out);
+    if(seg->ct) out->ct = CTABdeepCopy(seg->ct);  
+    MRIcopy(seg,out);
+  }
+
+  // Cant do this in parallel
+  std::vector<std::array<int,3>> edgecrs;
+  int nhits0 = 0, nreplace = 0;
+  // Go through all the voxels looking for edge voxels
+  for(int c0=0; c0 < seg->width; c0++){
+    for(int r0=0; r0 < seg->height; r0++){
+      for(int s0=0; s0 < seg->depth; s0++){
+	int v0segid = MRIgetVoxVal(seg,c0,r0,s0,0);
+	// Check whether this center voxel is a seg id
+	if(v0segid != segid) continue;
+	nhits0 ++;
+	int stop = 0;
+	// Check adjacent voxels to see if they are edges
+	for(int dc = -1; dc < 2 && !stop; dc++){
+	  int c = c0 + dc;
+	  if(c < 0 || c >= seg->width) continue;
+	  for(int dr = -1; dr < 2 && !stop; dr++){
+	    int r = r0 + dr;
+	    if(r < 0 || r >= seg->height) continue;
+	    for(int ds = -1; ds < 2 && !stop; ds++){
+	      int s = s0 + ds;
+	      if(s < 0 || s >= seg->depth) continue;
+	      // topo 1=face, 2=face+edge, 3=face+edge+corner
+	      if(abs(dc+dr+ds) > topo) continue;
+	      int vsegid = MRIgetVoxVal(seg,c,r,s,0);
+	      if(vsegid == segid) continue;
+	      // This neighbor does not match center, so center is an edge voxel
+	      // Push the center onto the stack
+	      std::array<int,3> a{c0,r0,s0};
+	      edgecrs.push_back(a);
+	      stop = 1; // don't continue searching around this voxel
+	      nreplace ++;
+	    } // ds
+	  }// dr
+	}// dc
+      }
+    }
+  }
+  printf("nhits0 = %d  nreplace = %d %d\n",nhits0,nreplace,(int)edgecrs.size());
+
+  // Now replace the voxel value
+  for(int n = 0; n < edgecrs.size(); n++){
+    std::array<int,3> a = edgecrs[n];
+    MRIsetVoxVal(out,a[0],a[1],a[2],0,replaceid);
+  }
+
+  return(out);;
+}
 /*-----------------------------------------------------*/
 MRI *MRIerodeThresh(MRI *mri_src, MRI *mri_intensity, double thresh, MRI *mri_dst)
 {
