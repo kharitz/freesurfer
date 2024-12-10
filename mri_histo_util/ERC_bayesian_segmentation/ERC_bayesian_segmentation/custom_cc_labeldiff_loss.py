@@ -7,7 +7,6 @@ from torch.utils.checkpoint import checkpoint
 from torch import nn
 from torch.nn import functional as F
 from typing import Union, Tuple, List, Optional, Dict, Any, Callable
-#from ext.fireants.types import ItemOrList
 from fireants.types import ItemOrList
 import numpy as np
 

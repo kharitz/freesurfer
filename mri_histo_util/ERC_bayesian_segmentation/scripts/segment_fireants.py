@@ -19,9 +19,7 @@ import csv
 import argparse
 import math
 from torch.nn.functional import grid_sample
-#from ext.fireants.io import Image,BatchedImages
-#from ext.fireants.registration import AffineRegistration, GreedyRegistration
-from fireants.io import Image, BatchedImages
+from fireants.io import Image,BatchedImages
 from fireants.registration import AffineRegistration, GreedyRegistration
 import SimpleITK as sitk
 from time import time
@@ -42,7 +40,7 @@ parser.add_argument("--write_bias_corrected", action="store_true", help="Write b
 parser.add_argument("--cpu", action="store_true", help="Use CPU instead of GPU")
 parser.add_argument("--threads", type=int, default=1, help="(optional) Number of CPU cores to be used. Default is 1. You can use -1 to use all available cores")
 parser.add_argument("--skip", type=int, default=1, help="(optional) Skipping factor to easy memory requirements of priors when estimating Gaussian parameters. Default is 1.")
-parser.add_argument("--resolution", type=float, default=0.8, help="(optional) Resolution of output segmentation")
+parser.add_argument("--resolution", type=float, default=0.4, help="(optional) Resolution of output segmentation")
 parser.add_argument("--skip_bf", action="store_true", help="Skip bias field correction")
 parser.add_argument("--smooth_grad_sigma", type=float, default=1.00, help="(optional) Parameter of Greedy FireANTs registration")
 parser.add_argument("--smooth_warp_sigma", type=float, default=0.25, help="(optional) Parameter of Greedy FireANTs registration")
@@ -201,13 +199,13 @@ if skip_bf==False:
     print('Correcting bias field')
     print('   Trying model with polynomial basis functions')
     try:
-        Iim, _ = bf.correct_bias(Iim, Sim, maxit=10, penalty=0.1, order=6, device=device, dtype=dtype, basis=bf_mode)
+        Iim, _ = bf.correct_bias(Iim, Sim, maxit=100, penalty=0.1, order=6, device=device, dtype=dtype, basis=bf_mode)
     except:
         if device.type=='cpu':
             raise Exception('Bias correction failed (out of memory?)')
         else:
             print('Bias correction on GPU failed; trying with CPU')
-            Iim, _ = bf.correct_bias(Iim, Sim, maxit=10, penalty=0.1, order=4, device='cpu', dtype=dtype, basis=bf_mode)
+            Iim, _ = bf.correct_bias(Iim, Sim, maxit=100, penalty=0.1, order=4, device='cpu', dtype=dtype, basis=bf_mode)
     if args.write_bias_corrected:
         aux = (Iim / np.max(Iim) * 255).astype(np.uint8)
         my.MRIwrite(aux, aff, output_dir + '/bias.corrected.nii.gz')
@@ -307,9 +305,9 @@ else:
 # Get the label groupings and atlas labels from the config files
 tissue_index, grouping_labels, label_list, number_of_gmm_components = relab.get_tissue_settings(
             os.path.join(BASE_PATH, 'data_simplified', 'atlas_names_and_labels.yaml'),
-            os.path.join(BASE_PATH, 'data_simplified', 'combined_atlas_labels_exvivo.yaml'),
-            os.path.join(BASE_PATH, 'data_simplified', 'combined_aseg_labels_exvivo.yaml'),
-            os.path.join(BASE_PATH, 'data_simplified', 'gmm_components_exvivo.yaml'),
+            os.path.join(BASE_PATH, 'data_simplified', 'combined_atlas_labels_fireants.yaml'),
+            os.path.join(BASE_PATH, 'data_simplified', 'combined_aseg_labels_fireants.yaml'),
+            os.path.join(BASE_PATH, 'data_simplified', 'gmm_components_fireants.yaml'),
             aseg_label_list
 )
 
@@ -574,7 +572,6 @@ if np.mean(native_resolution)<0.3:
     scales = [12, 8, 4, 2, 1]; iterations = [300, 100, 30, 30, 30]
 if np.mean(native_resolution) < 0.2:
     scales = [16, 8, 4, 2, 1]; iterations = [300, 100, 30, 30, 30]
-iterations = [30, 10, 5]
 
 reg = GreedyRegistration(scales=scales, iterations=iterations,
             fixed_images=batch1, moving_images=batch2,
@@ -737,7 +734,7 @@ x = I_r[::skip, ::skip, ::skip]
 prior_count = 100 / (resolution ** 3) / (skip ** 3)
 prior_variance = var_bg
 loglhood_old = -10000
-for em_it in range(10):
+for em_it in range(100):
     # E step
     for c in range(n_tissues):
         prior = priors[:, :, :, c]
@@ -772,6 +769,7 @@ for em_it in range(10):
         num_components = number_of_gmm_components[c + 1]
         gaussian_numbers = torch.tensor(np.sum(number_of_gmm_components[1:c + 1]) + \
                                         np.array(range(num_components)), device=device, dtype=dtype).long()
+
         mixture_weights[gaussian_numbers] /= torch.sum(mixture_weights[gaussian_numbers])
 
     weights[1:] = mixture_weights
