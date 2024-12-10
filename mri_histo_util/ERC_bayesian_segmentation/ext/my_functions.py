@@ -40,6 +40,37 @@ def cropLabelVol(V,
 
     return cropped, cropping
 
+##################
+def cropLabelVolTorch(V,
+                 margin=10,
+                 threshold=0):
+
+    margin = torch.tensor(margin, device=V.device, dtype=torch.long)
+    if len(V.shape) < 2:
+        V = V[..., None]
+    if len(V.shape) < 3:
+        V = V[..., None]
+    # Now crop
+    idx = torch.where(V > threshold)
+    i1 = torch.min(idx[0]) - margin
+    j1 = torch.min(idx[1]) - margin
+    k1 = torch.min(idx[2]) - margin
+    i2 = torch.max(idx[0]) + margin
+    j2 = torch.max(idx[1]) + margin
+    k2 = torch.max(idx[2]) + margin
+    # out of bounds check
+    i1 = i1 if i1>=0 else 0
+    j1 = j1 if j1 >= 0 else 0
+    k1 = k1 if k1 >= 0 else 0
+    i2 = i2 if i2 < V.shape[0] else (V.shape[0] - 1)
+    j2 = j2 if j2 < V.shape[1] else (V.shape[1] - 1)
+    k2 = k2 if k2 < V.shape[2] else (V.shape[2] - 1)
+
+    cropping = [i1, j1, k1, i2, j2, k2]
+    cropped = V[i1:i2, j1:j2, k1:k2]
+
+    return cropped, cropping
+
 ###############################3
 
 def applyCropping(V, cropping):
@@ -99,11 +130,13 @@ def MRIwrite(volume, aff, filename, dtype=None):
 
 ###############################3
 
-def MRIread(filename, dtype=None, im_only=False):
+def MRIread(filename, dtype=None, im_only=False, as_closest_canonical=False):
 
     assert filename.endswith(('.nii', '.nii.gz', '.mgz')), 'Unknown data file: %s' % filename
 
     x = nib.load(filename)
+    if as_closest_canonical:
+        x = nib.as_closest_canonical(x)
     volume = x.get_fdata()
     aff = x.affine
 
@@ -115,7 +148,119 @@ def MRIread(filename, dtype=None, im_only=False):
     else:
         return volume, aff
 
-###############################3
+###############################
+
+def getM(ref, mov):
+    device = ref.device
+    dtype = torch.float
+    zmat = torch.zeros(ref.shape[::-1], device=device, dtype=dtype)
+    zcol = torch.zeros([ref.shape[1], 1], device=device, dtype=dtype)
+    ocol = torch.ones([ref.shape[1], 1], device=device, dtype=dtype)
+    zero = torch.zeros(zmat.shape, device=device, dtype=dtype)
+    A = torch.concatenate([
+        torch.concatenate([torch.t(ref), zero, zero, ocol, zcol, zcol], axis=1),
+        torch.concatenate([zero, torch.t(ref), zero, zcol, ocol, zcol], axis=1),
+        torch.concatenate([zero, zero, torch.t(ref), zcol, zcol, ocol], axis=1)], axis=0)
+    b = torch.concatenate([torch.t(mov[0, :]), torch.t(mov[1, :]), torch.t(mov[2, :])], axis=0)
+    x = (torch.linalg.inv(torch.t(A) @ A))  @ (torch.t(A) @ b)
+    M = torch.tensor([
+        [x[0], x[1], x[2], x[9]],
+        [x[3], x[4], x[5], x[10]],
+        [x[6], x[7], x[8], x[11]],
+        [0, 0, 0, 1]], device=device, dtype=dtype)
+    return M
+
+
+###############################
+def fast_3D_interp_torch(X, II, JJ, KK, mode, pad_value=0):
+    if mode=='nearest':
+        IIr = torch.round(II).long()
+        JJr = torch.round(JJ).long()
+        KKr = torch.round(KK).long()
+
+        ok = torch.full(II.shape, True, device=X.device, dtype=torch.bool)
+
+        mask = (IIr < 0)
+        ok[mask] = False
+        IIr[mask] = 0
+
+        mask = (JJr < 0)
+        ok[mask] = False
+        JJr[mask] = 0
+
+        mask = (KKr < 0)
+        ok[mask] = False
+        KKr[mask] = 0
+
+        mask = (IIr > (X.shape[0] - 1))
+        ok[mask] = False
+        IIr[mask] = (X.shape[0] - 1)
+
+        mask = (JJr > (X.shape[1] - 1))
+        ok[mask] = False
+        JJr[mask] = (X.shape[1] - 1)
+
+        mask = (KKr > (X.shape[2] - 1))
+        ok[mask] = False
+        KKr[mask] = (X.shape[2] - 1)
+
+        Y = X[IIr, JJr, KKr]
+
+        Y[ok==False] = pad_value
+
+    elif mode=='linear':
+        ok = (II>0) & (JJ>0) & (KK>0) & (II<=X.shape[0]-1) & (JJ<=X.shape[1]-1) & (KK<=X.shape[2]-1)
+        IIv = II[ok]
+        JJv = JJ[ok]
+        KKv = KK[ok]
+
+        fx = torch.floor(IIv).long()
+        cx = fx + 1
+        cx[cx > (X.shape[0] - 1)] = (X.shape[0] - 1)
+        wcx = IIv - fx
+        wfx = 1 - wcx
+
+        fy = torch.floor(JJv).long()
+        cy = fy + 1
+        cy[cy > (X.shape[1] - 1)] = (X.shape[1] - 1)
+        wcy = JJv - fy
+        wfy = 1 - wcy
+
+        fz = torch.floor(KKv).long()
+        cz = fz + 1
+        cz[cz > (X.shape[2] - 1)] = (X.shape[2] - 1)
+        wcz = KKv - fz
+        wfz = 1 - wcz
+
+        c000 = X[fx, fy, fz]
+        c100 = X[cx, fy, fz]
+        c010 = X[fx, cy, fz]
+        c110 = X[cx, cy, fz]
+        c001 = X[fx, fy, cz]
+        c101 = X[cx, fy, cz]
+        c011 = X[fx, cy, cz]
+        c111 = X[cx, cy, cz]
+
+        c00 = c000 * wfx + c100 * wcx
+        c01 = c001 * wfx + c101 * wcx
+        c10 = c010 * wfx + c110 * wcx
+        c11 = c011 * wfx + c111 * wcx
+
+        c0 = c00 * wfy + c10 * wcy
+        c1 = c01 * wfy + c11 * wcy
+
+        c = c0 * wfz + c1 * wcz
+
+        Y = torch.full(II.shape, pad_value, device=X.device, dtype=X.dtype)
+        Y[ok] = c.float()
+
+    else:
+        raise Exception('mode must be linear or nearest')
+
+    return Y
+
+
+################################
 
 def downsampleMRI2d(X, aff, shape, factors, mode='image'):
 
@@ -304,7 +449,6 @@ def conv_slow_fallback(x, kernel):
     for i in range(len(kernel)):
         y = y.addcmul_(x[i], kernel[i])
     return y
-
 
 ########################
 
@@ -941,7 +1085,8 @@ def get_priors_or_posteriors(atlas_names, atlas_size, grids, atlas_resolution,
     prefetch_factor = max(prefetch//workers, 1)
     label_loader = DataLoader(LabelDataset(atlas_names), num_workers=workers, prefetch_factor=prefetch_factor)
     for n, (prior_indices, prior_values) in enumerate(label_loader):
-        print('Reading in label ' + str(n + 1) + ' of ' + str(n_labels), end='\r', flush=True)
+        # print('Reading in label ' + str(n + 1) + ' of ' + str(n_labels), end='\r', flush=True)  TODO: go back to this version when releasing the code
+        print('Reading in label ' + str(n + 1) + ' of ' + str(n_labels))
 
         if prior_indices.numel() == 0:
             continue

@@ -160,7 +160,7 @@ long long FStagsIO::getlen_mri_frames(MRI *mri, bool niftiheaderext, bool addtag
 
 
 // return different length depends on niftiheaderext
-long long FStagsIO::getlen_gcamorph_geom(const char *source_fname, const char *target_fname, bool niftiheaderext, bool addtaglength)
+long long FStagsIO::getlen_gcamorph_geom(const char *source_fname, const char *target_fname, bool niftiheaderext, bool addtaglength, bool shearless)
 {
   long long dlen = 0;
   if (addtaglength)
@@ -184,6 +184,9 @@ long long FStagsIO::getlen_gcamorph_geom(const char *source_fname, const char *t
     geom_len += strlen(source_fname) + strlen(target_fname);
     dlen += geom_len;
   }
+
+  if (!shearless)
+    dlen += 3 * sizeof(float);  
 
   return dlen;
 }
@@ -495,28 +498,32 @@ int FStagsIO::write_mri_frames(MRI *mri)
 }
 
 
-// TAG_GCAMORPH_GEOM is in length-less format
-int FStagsIO::write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target)
+// write TAG_GCAMORPH_GEOM/TAG_GCAMORPH_GEOM_PLUSSHEAR
+// TAG_GCAMORPH_GEOM is in length-less format if niftiheaderext = false
+int FStagsIO::write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shearless)
 {
   long long fstart = 0;
   if (Gdiag & DIAG_INFO)
     fstart = znztell(fp);
   
-  znzwriteInt(TAG_GCAMORPH_GEOM, fp);
+  int tag = TAG_GCAMORPH_GEOM;
+  if (!shearless)
+    tag = TAG_GCAMORPH_GEOM_PLUSSHEAR;
+  znzwriteInt(tag, fp);
   
   if (niftiheaderext)
   {
-    long long dlen = getlen_gcamorph_geom(source->fname, target->fname, niftiheaderext, false);
+    long long dlen = getlen_gcamorph_geom(source->fname, target->fname, niftiheaderext, false, shearless);
     znzwriteLong(dlen, fp);
   }
   
-  source->write(fp, niftiheaderext);
-  target->write(fp, niftiheaderext);
+  source->write(fp, niftiheaderext, shearless);
+  target->write(fp, niftiheaderext, shearless);
 
   if (Gdiag & DIAG_INFO)
   {
     long long fend = znztell(fp);
-    printf("[DEBUG] TAG = %-4d, dlen = %-6lld (%-6lld - %-6lld)\n", TAG_GCAMORPH_GEOM, fend-fstart, fstart, fend);
+    printf("[DEBUG] TAG = %-4d, dlen = %-6lld (%-6lld - %-6lld)\n", tag, fend-fstart, fstart, fend);
   }
   
   return NO_ERROR;
@@ -890,11 +897,11 @@ int FStagsIO::read_mri_frames(MRI *mri, long long len)
 }
 
 
-// read TAG_GCAMORPH_GEOM data
-int FStagsIO::read_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target)
+// read TAG_GCAMORPH_GEOM/TAG_GCAMORPH_GEOM_PLUSSHEAR data
+int FStagsIO::read_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shearless)
 {
-  source->read(fp, niftiheaderext);
-  target->read(fp, niftiheaderext);
+  source->read(fp, niftiheaderext, shearless);
+  target->read(fp, niftiheaderext, shearless);
 
   return NO_ERROR;
 }
