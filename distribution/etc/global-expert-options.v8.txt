@@ -1,4 +1,4 @@
-recon-all -fix-ento-wm -transfer-base-bfs -fix-vsinus -fix-mca-dura -fix-ga -fix-acj  -synthstrip -synthseg -synthmorph
+recon-all -fix-ento-wm -transfer-base-bfs -fix-vsinus -fix-mca-dura -fix-ga -fix-acj  -synthstrip -synthseg -synthmorph -josareg
 WhitePreAparc --rip-bg-no-annot --rip-bg --rip-bg-lof --restore-255  --outvol mrisps.wpa.mgz
 PlaceWhiteSurf --restore-255 --outvol mrisps.white.mgz --rip-bg-lof
 T1PialSurf --restore-255 --outvol mrisps.pial.mgz

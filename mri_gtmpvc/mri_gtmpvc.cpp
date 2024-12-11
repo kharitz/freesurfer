@@ -321,13 +321,13 @@ int main(int argc, char *argv[])
     gtm->anat2pet = TransformRegDat2LTA(gtm->anatseg, gtm->yvol, NULL);
   VOL_GEOM vg;
   getVolGeom(gtm->yvol, &vg);
-  if(!vg_isEqual(&vg, &(gtm->anat2pet->xforms[0].src))){
+  if(!vg_isEqual(&vg, &(gtm->anat2pet->xforms[0].dst))){
     printf("ERROR: registration dst volume geometry does not match input\n");
     printf("  =======Input volume geometry==========\n");
     writeVolGeom(stdout, &vg);
     printf("  =======Registration dst volume geometry=====\n");
-    writeVolGeom(stdout, &(gtm->anat2pet->xforms[0].src));
-    printf("ERROR: registration src volume geometry does not match input\n");
+    writeVolGeom(stdout, &(gtm->anat2pet->xforms[0].dst));
+    printf("ERROR: registration dst volume geometry does not match input\n");
     printf("This might be fixable by setting --vg-thresh\n");
     exit(1);
   }
@@ -1326,6 +1326,8 @@ static int parse_commandline(int argc, char **argv) {
 	printf("ERROR: reading %s\n",regfile);
 	exit(1);
       }
+      // This is actually pet2anat, so invert it
+      LTAinvert(gtm->anat2pet,gtm->anat2pet);
       nargsused = 1;
     } 
     else if(!strcmp(option, "--xfm")){

@@ -92,8 +92,7 @@ endif
 
 #========================================================
 foreach hemi ($hemilist)
-  #set h5 = $modeltop/mris_register_josa_${hemi}_20231025.h5
-  set h5 = $modeltop/mris_register_josa_20240401_${hemi}.h5
+  set h5 = $modeltop/mris_register_josa_20241121_${hemi}.h5
   set sphere = $sdir/$hemi.$spherename
   set sulc = $sdir/$hemi.sulc
   set curv = $sdir/$hemi.curv
@@ -139,9 +138,7 @@ foreach hemi ($hemilist)
   set spherejreg = $outdir/$hemi.josa.sphere.reg # must be $hemi.sphere.reg for now
   set ud = `UpdateNeeded $spherejreg $sphereregrigid $sulc $curv $inflatedH`
   if($ud || $ForceUpdate)then
-    set cmd = (mris_register_josa --hmsp $hemi --sulc_file $sulc --curv_file $curv \
-     --inflated_curv_file $inflatedH --sphere_rot $sphereregrigid \
-     --model $h5 --output $spherejreg --threads $threads)
+    set cmd = (mris_register_josa -h $hemi -S $sulc -C $curv -H $inflatedH -t $sphereregrigid -m $h5 -o $spherejreg -T $threads)
     echo "\n\n" $cmd "\n\n" | tee -a $LF
     fs_time $cmd |& tee -a $LF
     if($status) goto error_exit
