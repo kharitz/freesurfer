@@ -70,6 +70,7 @@ char *OutVolFile=NULL;
 char *SUBJECTS_DIR;
 int nthreads;
 COLOR_TABLE *ctMaster, *ctMerge=NULL;
+int nErodeWM = 0, ErodeWMTopo=1;
 
 /*---------------------------------------------------------------*/
 int main(int argc, char *argv[]) {
@@ -131,13 +132,16 @@ int main(int argc, char *argv[]) {
   }
   printf("master tissue type schema %s\n",ctMaster->TissueTypeSchema);
 
-  //err = CTABwriteFileASCIItt(ctMaster,"master.ctab");
-  //if(err) exit(1);
-
   mytimer.reset();
   printf("Starting MRIgtmSeg()\n"); fflush(stdout);
   err = MRIgtmSeg(gtmseg);
   if(err) exit(1);
+
+  if(nErodeWM > 0){
+    printf("Eroding WM %d iterations, topo=%d\n",nErodeWM,ErodeWMTopo); fflush(stdout);
+    MRIerodeAndReplaceLabel(gtmseg->seg,  2, 5001, ErodeWMTopo, nErodeWM, gtmseg->seg);
+    MRIerodeAndReplaceLabel(gtmseg->seg, 41, 5002, ErodeWMTopo, nErodeWM, gtmseg->seg);
+  }
 
   printf("Computing colortable\n");
   ct = GTMSEGctab(gtmseg, ctMaster);
@@ -163,6 +167,12 @@ int main(int argc, char *argv[]) {
     if(ct == NULL) exit(1);
   }
   printf("tissue type schema %s\n",ct->TissueTypeSchema);
+
+  if(nErodeWM > 0){
+    int structure; COLOR_TABLE_ENTRY *cte;
+    structure = 5001; cte = ct->entries[structure]; sprintf(cte->name,"Left-Shell-Cerebral-White-Matter");
+    structure = 5002; cte = ct->entries[structure]; sprintf(cte->name,"Right-Shell-Cerebral-White-Matter");
+  }
 
   // embed color table in segmentation
   gtmseg->seg->ct = CTABdeepCopy(ct);
@@ -231,6 +241,16 @@ static int parse_commandline(int argc, char **argv) {
     else if(!strcasecmp(option, "--usf") || !strcasecmp(option, "--internal-usf")) {
       if(nargc < 1) CMDargNErr(option,1);
       sscanf(pargv[0],"%d",&gtmseg->USF);
+      nargsused = 1;
+    } 
+    else if(!strcasecmp(option, "--wm-erode")){
+      if(nargc < 1) CMDargNErr(option,1);
+      sscanf(pargv[0],"%d",&nErodeWM);
+      nargsused = 1;
+    } 
+    else if(!strcasecmp(option, "--wm-erode-topo")){
+      if(nargc < 1) CMDargNErr(option,1);
+      sscanf(pargv[0],"%d",&ErodeWMTopo);
       nargsused = 1;
     } 
     else if(!strcasecmp(option, "--output-usf")) {
@@ -360,6 +380,8 @@ static void print_usage(void) {
   printf("   --dmax dmax : distance from ctx for wmseg to be considered 'unsegmented' (%f)\n",gtmseg->dmax);
   printf("   --keep-hypo : do not convert WM hypointensities to a white matter label \n");
   printf("   --keep-cc : do not convert corpus callosum to a white matter label \n");
+  printf("   --wm-erode N : erode WM (2,41) by N, replacing with 5001 and 5002\n");
+  printf("   --wm-erode-topo topo : topology = 1,2,3 when eroding WM (default is %d)\n",ErodeWMTopo);
   printf("   --ctab ctab.lut : copy items in ctab.lut into master ctab merging or overwriting what is there \n");
   printf("   --lhminmax lhmin lhmax : for defining ribbon in apas (default: %d %d) \n",gtmseg->lhmin,gtmseg->lhmax);
   printf("   --rhminmax rhmin rhmax : for defining ribbon in apas (default: %d %d) \n",gtmseg->rhmin,gtmseg->rhmax);
@@ -408,6 +430,8 @@ static void dump_options(FILE *fp) {
 }
 
 /*!
+  This is probably not needed anymore as I did not know that it was
+  here and re-implemented it as MRIerodeAndReplaceLabel()
   \fn MRI *MRIErodeWMSeg(MRI *seg, int nErode3d, MRI *outseg)
   Takes a segmentation and erodes WM by nErode3d, then sets the
   seg value in surviving voxels to 5001 or 5002, which is
