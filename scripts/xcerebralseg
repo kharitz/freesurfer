@@ -17,6 +17,7 @@ set DoStats = 0;
 set UseSamseg = 0
 set ForceUpdate = 0
 set SamsegRevert = 0
+set ctab = $FREESURFER_HOME/FreeSurferColorLUT.txt 
 
 # Seghead parameters
 set thresh = 35
@@ -200,7 +201,7 @@ if($status) exit 1;
 
 # Replace unlabeled voxels in the head with head seg
 set seg4 = $tmpdir/seg4.mgh
-set cmd = (mri_binarize --i $seg3 --o $seg4 --replaceonly 0 258 --mask $seghead);
+set cmd = (mri_binarize --ctab $ctab --i $seg3 --o $seg4 --replaceonly 0 258 --mask $seghead);
 echo $cmd | tee -a $LF
 $cmd | tee -a $LF
 if($status) goto error_exit;
@@ -220,8 +221,7 @@ if($DoStats) then
   set cmd = (mri_segstats --seg $outseg --sum $sum \
      --pv $sdir/mri/nu.mgz --empty --brainmask $sdir/mri/brainmask.mgz \
      --in-intensity-name nu \
-     --in $sdir/mri/nu.mgz  --in-intensity-units MR --etiv  \
-     --ctab $FREESURFER_HOME/FreeSurferColorLUT.txt \
+     --in $sdir/mri/nu.mgz  --in-intensity-units MR --etiv --ctab $ctab \
      --subject $subject --id 2 41 4 5 14 15 43 44 130 165 257 258)
   if($DoVermis) set cmd = ($cmd --id 172)
   if($DoPons)   set cmd = ($cmd --id 174)
