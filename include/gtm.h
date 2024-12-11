@@ -50,6 +50,8 @@ typedef struct
   LTA *anat2seg;
   int lhmin, lhmax, rhmin, rhmax;
   int *segidlist, nsegs;
+  char *mergesegfile=NULL;
+  std::vector<int> mergesegids;
   MRI *anat; // header of anatomical to get geom
 } GTMSEG;
 

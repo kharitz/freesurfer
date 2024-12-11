@@ -97,6 +97,39 @@ int MRIgtmSeg(GTMSEG *gtmseg)
   apas = MRIread(tmpstr);
   if (apas == NULL) return (1);
 
+  if(gtmseg->mergesegfile){
+    sprintf(tmpstr, "%s/%s/mri/%s", SUBJECTS_DIR, gtmseg->subject, gtmseg->mergesegfile);
+    printf("Loading %s\n", tmpstr);
+    MRI *mergeseg = MRIread(tmpstr);
+    if(mergeseg == NULL) return (1);
+    int err = MRIdimMismatch(mergeseg, apas, 0);
+    if(err){
+      printf("ERROR: merge file dimension mismatch\n");
+      return(1);
+    }
+    printf("Merging segids ");
+    for(int n=0; n < gtmseg->mergesegids.size(); n++) printf("%d ",gtmseg->mergesegids[n]);
+    int nhits = 0;
+    #ifdef HAVE_OPENMP
+    #pragma omp parallel for reduction(+ : nhits)
+    #endif
+    for(int c=0; c < apas->width; c++){
+      for(int r=0; r < apas->height; r++){
+	for(int s=0; s < apas->depth; s++){
+	  int vsegid = MRIgetVoxVal(mergeseg,c,r,s,0);
+	  for(int n=0; n < gtmseg->mergesegids.size(); n++){
+	    if(vsegid != gtmseg->mergesegids[n]) continue;
+	    MRIsetVoxVal(apas,c,r,s,0,vsegid);
+	    nhits ++;
+	    break;
+	  }
+	}
+      }
+    }
+    printf("Replaced %d voxels from mergeseg\n",nhits);
+    MRIfree(&mergeseg);
+  }
+
   gtmseg->anat = MRIcopyHeader(apas, NULL);  // keep anat header around
 
   aseg = MRIunsegmentCortex(apas, gtmseg->lhmin, gtmseg->lhmax, gtmseg->rhmin, gtmseg->rhmax, NULL);  // aseg+head

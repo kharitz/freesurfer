@@ -29,6 +29,9 @@ set UseSamseg = 0
 set threads = 1
 set xcthresh = ()
 set nErodeWM = 0
+set MergeSeg = ()
+set MergeSegIds = ()
+set MergeSegCtab = ()
 
 set tmpdir = ();
 set cleanup = 1;
@@ -70,7 +73,11 @@ endif
 mkdir -p $tmpdir
 
 # Set up log file
-if($#LF == 0) set LF = $SUBJECTS_DIR/$subject/scripts/$outvol.log
+mkdir -p $SUBJECTS_DIR/$subject/scripts/log/
+if($#LF == 0) then
+  set LF = $SUBJECTS_DIR/$subject/scripts/log/$outvol.log
+  if(-e $LF) mv $LF $SUBJECTS_DIR/$subject/scripts/log/$outvol.$$.log
+endif
 if($LF != /dev/null) rm -f $LF
 echo "Log file for gtmseg" >> $LF
 date  | tee -a $LF
@@ -145,6 +152,8 @@ if($KeepHypo)     set cmd = ($cmd --keep-hypo)
 if(! $KeepHypo)   set cmd = ($cmd --no-keep-hypo)
 if($#OutputUSF)   set cmd = ($cmd --output-usf $OutputUSF)
 if($#ctab)        set cmd = ($cmd --ctab $ctab)
+if($#MergeSeg)    set cmd = ($cmd --merge $MergeSeg $MergeSegIds)
+if($#MergeSegCtab) set cmd = ($cmd --ctab $MergeSegCtab)
 
 echo $cmd | tee -a $LF
 $cmd | tee -a $LF
@@ -152,10 +161,10 @@ if($status) goto error_exit;
 
 if($DoSegStats) then
   set gtmsegstem = `fname2stem $outvol`
-  set ctab = $SUBJECTS_DIR/$subject/mri/$gtmsegstem.ctab
+  set gtmctab = $SUBJECTS_DIR/$subject/mri/$gtmsegstem.ctab
   set stat = $SUBJECTS_DIR/$subject/stats/$gtmsegstem.stats
   set gtmseg = $SUBJECTS_DIR/$subject/mri/$outvol
-  set cmd = (mri_segstats --seg $gtmseg --ctab $ctab --sum $stat \
+  set cmd = (mri_segstats --seg $gtmseg --ctab $gtmctab --sum $stat \
     --excludeid 0 --etiv --subject $subject)
   $cmd | tee -a $LF
   if($status) goto error_exit;
@@ -248,6 +257,32 @@ while( $#argv != 0 )
     case "--ctab":
       if($#argv < 1) goto arg1err;
       set ctab = $argv[1]; shift;
+      breaksw
+
+    case "--merge":
+      if($#argv < 2) goto arg2err;
+      set MergeSeg = $argv[1]; shift;
+      set MergeSegIds = ()
+      foreach a ($argv)
+        set b = `echo $a | cut -c1`
+        if("$b" == "-") break;  
+        set MergeSegIds = ($MergeSegIds $a)
+        shift
+      end
+      if($#MergeSegIds == 0) then
+        echo "ERROR: could not find any seg ids with --merge"
+        echo "  proper usage is --merge segfilename segid1 ..."
+        exit 1
+      endif
+      breaksw
+
+    case "--merge-ctab":
+      if($#argv < 1) goto arg1err;
+      set MergeSegCtab = $argv[1]; shift;
+      if(! -e $MergeSegCtab) then
+        echo "ERROR: cannot find $MergeSegCtab"
+        exit 1
+      endif
       breaksw
 
     case "--usf":
@@ -448,6 +483,19 @@ if($DoXCerSeg == 0 && ! -e $SUBJECTS_DIR/$subject/mri/$headseg) then
   exit 1;
 endif
 
+if($#MergeSeg) then
+  set f = $SUBJECTS_DIR/$subject/mri/$MergeSeg
+  if(! -e $f) then
+    echo "ERROR: cannot find $f"
+    exit 1
+  endif
+endif
+
+if($#MergeSegCtab && $#ctab) then
+  echo "ERROR: cannot have both --ctab and merge-ctab"
+  exit 1
+endif
+
 goto check_params_return;
 ############--------------##################
 
@@ -490,6 +538,8 @@ usage_exit:
   echo " --no-pons :   do not add pons segmentation when doing ---xcerseg":
   echo " --no-vermis : do not add vermis segmentation when doing ---xcerseg":
   echo " --wm-erode N : erode WM (2,41) by N, replacing with 5001 and 5002 (Left/Right-Shell-Cerebral-White-Matter)":
+  echo " --merge segname segid1 ... : merge given segids in subject/mri/segname"
+  echo " --merge-ctab ctab : colortable to use with merge if needed (must have tissue type)"
   echo " --ctab colortable "
   echo " --seg-stats : compute segmentation stats"
   echo " --xcthresh xcthresh : mri_seghead thresh"
@@ -545,14 +595,32 @@ create it with
 
 xcerebralseg --s $subject --o $SUBJECTS_DIR/$subject/mri/apas+head.mgz
 
-Using a custom subcortical segementation:
+=====================================================================
+Using a custom subcortical segementation: there are two methods:
 
-First, run gtmseg as default to create the apas+head.mgz file.
-Create a new/custom subcortical segmentation by replacing voxels in
-apas+head.mgz with your segmentation: make sure that the index you
-give your new segmentation(s) is not already present in
-apas+head.mgz. Next create a color table text file that looks
-something like this:
+------------------------------------------------------------------------
+In the first method, create a segmentation to merge into the
+aparc+aseg.mgz. It must be in the mri folder and the same size as
+aparc+aseg.mgz. Eg, if it is called myseg.mgz, then run 
+
+gtmseg --s subject --merge myseg.mgz 801 802 --merge-ctab myseg.ctab --o gtmseg+myseg ...
+
+This will find places where myseg is 801 or 802 and transfer 801 and
+802 to the gtmseg. The color table (ctab) must be one that includes a
+tissue type schema (see below). You must include a ctab unless FS already
+knows internally what the tissue type is (unlikely for custom segs). 
+
+You must manage the merge segmentation numbers (eg, 801 and 802). They
+should not collide with numbers in the aparc+aseg.mgz (there is no
+error check for this). 
+
+------------------------------------------------------------------------
+In the second method, run gtmseg as default to create the
+apas+head.mgz file.  Create a new/custom subcortical segmentation by
+replacing voxels in apas+head.mgz with your segmentation: make sure
+that the index you give your new segmentation(s) is not already
+present in apas+head.mgz. Next create a color table text file that
+looks something like this:
 
 # TissueTypeSchema 
 #ctTType   0  unknown                           0   0   0    0
@@ -587,6 +655,8 @@ To use, eg, aparc.a2009s, then
   --ctx-annot aparc.a2009s.annot 11100 12101
   The 11100 and 12101 will make it agree with  $FREESURFER/FreeSurferColorLUT.txt
 
+
+===========================================================
 Using a custom cortical parcellation:
 
 If you have your own cortical annotation, then just specify

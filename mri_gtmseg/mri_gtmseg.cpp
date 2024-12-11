@@ -126,6 +126,39 @@ int main(int argc, char *argv[]) {
 
   ctMaster = TissueTypeSchema(NULL,"default-apr-2019+head");
 
+#if 0 // this stuff is better handled by a merge ct right now as TT is not embedded
+  if(0 && gtmseg->mergesegfile){
+    sprintf(tmpstr, "%s/%s/mri/%s", SUBJECTS_DIR, gtmseg->subject, gtmseg->mergesegfile);
+    printf("Loading header %s\n", tmpstr);
+    MRI *mergeseg = MRIreadHeader(tmpstr,MRI_VOLUME_TYPE_UNKNOWN);
+    if(mergeseg == NULL) return (1);
+    if(mergeseg->ct){
+      printf("Merging ctab %d %d\n",ctMaster->nentries,mergeseg->ct->nentries);
+      for(int n=0; n < gtmseg->mergesegids.size(); n++){
+	// may need to expand the number of segs in the ctab if largest merge seg larger
+	int segid = gtmseg->mergesegids[n];
+	COLOR_TABLE_ENTRY *cte2 = mergeseg->ct->entries[segid];
+	if(!cte2) {
+	  printf("ERROR: embedded ctab in mergeseg does not have %d\n",gtmseg->mergesegids[n]);
+	  return(1);
+	}
+	COLOR_TABLE_ENTRY *cte1 = ctMaster->entries[segid];
+	if(!cte1) {
+	  cte1 = (CTE*) calloc(sizeof(CTE),1);
+	  ctMaster->entries[segid] = cte1;
+	}
+	memcpy(cte1, cte2, sizeof(CTE));
+	// Currently, tissue type does not work because it cannot be
+	// written into or read from embedded ctab. Use merge ctab instead.
+	//if(mergeseg->ct->ctabTissueType == 0) cte1->TissueType = -1;
+	printf("%d %s  %d\n",segid,cte1->name,cte1->TissueType);
+      }
+    }
+    MRIfree(&mergeseg);
+    //CTABwriteFileASCIItt(ctMaster,"dng.ctab");
+  }
+#endif
+
   if(ctMerge) {
     printf("Merging CTAB master with merge ctab\n");
     CTABmerge(ctMaster,ctMerge);
@@ -336,16 +369,28 @@ static int parse_commandline(int argc, char **argv) {
       #endif
     } 
     else if(!strcasecmp(option, "--lhminmax")) {
-      if(nargc < 3) CMDargNErr(option,2);
+      if(nargc < 2) CMDargNErr(option,2);
       sscanf(pargv[0],"%d",&gtmseg->lhmin);
       sscanf(pargv[1],"%d",&gtmseg->lhmax);
       nargsused = 2;
     } 
     else if(!strcasecmp(option, "--rhminmax")) {
-      if(nargc < 3) CMDargNErr(option,2);
+      if(nargc < 2) CMDargNErr(option,2);
       sscanf(pargv[0],"%d",&gtmseg->rhmin);
       sscanf(pargv[1],"%d",&gtmseg->rhmax);
       nargsused = 2;
+    } 
+    else if(!strcasecmp(option, "--merge")) {
+      if(nargc < 2) CMDargNErr(option,2);
+      gtmseg->mergesegfile = pargv[0];
+      int nth = 1;
+      while(CMDnthIsArg(nargc, pargv, nth) ){
+	int segid;
+	sscanf(pargv[nth],"%d",&segid);
+	gtmseg->mergesegids.push_back(segid);
+	nth ++;
+      }
+      nargsused = nth;
     } 
 
     else {
@@ -386,6 +431,7 @@ static void print_usage(void) {
   printf("   --lhminmax lhmin lhmax : for defining ribbon in apas (default: %d %d) \n",gtmseg->lhmin,gtmseg->lhmax);
   printf("   --rhminmax rhmin rhmax : for defining ribbon in apas (default: %d %d) \n",gtmseg->rhmin,gtmseg->rhmax);
   printf("   --output-usf OutputUSF : set actual output resolution. Default is to be the same as the --internal-usf");
+  printf("   --merge segname segid1 ... : mri/segname");
   printf("\n");
   #ifdef HAVE_OPENMP
   printf("   --threads N : use N threads (with Open MP)\n");
