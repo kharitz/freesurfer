@@ -558,6 +558,7 @@ int main(int argc, char *argv[])
   printf("Computing Seg in input space \n");fflush(stdout);
   gtm->gtmseg = MRIsegPVF2Seg(gtm->segpvf, gtm->segidlist, gtm->nsegs, 
 			      gtm->ctGTMSeg, gtm->mask, gtm->gtmseg);
+  gtm->gtmseg->ct = CTABdeepCopy(gtm->ctGTMSeg);
   if(OutSegFile){
     err=MRIwrite(gtm->gtmseg,OutSegFile);
     if(err) exit(1);
