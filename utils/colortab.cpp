@@ -2052,6 +2052,14 @@ COLOR_TABLE *TissueTypeSchemaDefaultHead(COLOR_TABLE *ct)
       case non_WM_hypointensities:  // not sure
       case Left_undetermined:
       case Right_undetermined:
+      case 819: //sclimbic Left-HypoThal-noMB
+      case 820: //sclimbic Right-HypoThal-noMB
+      case 843: //sclimbic Left-MammillaryBody
+      case 844: //sclimbic Right-MammillaryBody
+      case 865: //sclimbic Left-Basal-Forebrain
+      case 866: //sclimbic Right-Basal-Forebrain
+      case 869: //sclimbic Left-SeptalNuc
+      case 870: //sclimbic Right-SeptalNuc
         TT = TTSubCtxGM;
         break;
 
@@ -2074,6 +2082,9 @@ COLOR_TABLE *TissueTypeSchemaDefaultHead(COLOR_TABLE *ct)
       case CC_Anterior:
       case 34: // wmcrowns, lh
       case 66: // wmcrowns, rh
+      case 821: //sclimbic Left-Fornix
+      case 822: //sclimbic Right-Fornix
+      case 853: //sclimbic Mid-Ant-Com
         TT = TTWM;
         break;
 
