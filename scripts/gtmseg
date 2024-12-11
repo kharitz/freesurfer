@@ -28,6 +28,7 @@ set DoXCerSeg = ();
 set UseSamseg = 0
 set threads = 1
 set xcthresh = ()
+set nErodeWM = 0
 
 set tmpdir = ();
 set cleanup = 1;
@@ -133,7 +134,7 @@ if($SubSegWM && $#wmannot == 0) then
 endif
 
 set cmd = (mri_gtmseg --s $subject --usf $USF --o $outvol --threads $threads)
-set cmd = ($cmd --apas $headseg)
+set cmd = ($cmd --apas $headseg --wm-erode $nErodeWM)
 if($#ctxannot)  set cmd = ($cmd --ctx-annot $ctxannot $ctxlhbase $ctxrhbase)
 if($#wmannot)   set cmd = ($cmd --wm-annot  $wmannot  $wmlhbase  $wmrhbase)
 if($SubSegWM)   set cmd = ($cmd --subseg-wm --dmax $dmax)
@@ -262,6 +263,11 @@ while( $#argv != 0 )
     case "--dmax":
       if($#argv < 1) goto arg1err;
       set dmax = $argv[1]; shift;
+      breaksw
+
+    case "--wm-erode":
+      if($#argv < 1) goto arg1err;
+      set nErodeWM = $argv[1]; shift;
       breaksw
 
     case "--ctx-annot":
@@ -483,6 +489,7 @@ usage_exit:
   echo " --subseg-cblum-wm : subsegment cerebellum WM into core and gyri":
   echo " --no-pons :   do not add pons segmentation when doing ---xcerseg":
   echo " --no-vermis : do not add vermis segmentation when doing ---xcerseg":
+  echo " --wm-erode N : erode WM (2,41) by N, replacing with 5001 and 5002 (Left/Right-Shell-Cerebral-White-Matter)":
   echo " --ctab colortable "
   echo " --seg-stats : compute segmentation stats"
   echo " --xcthresh xcthresh : mri_seghead thresh"
