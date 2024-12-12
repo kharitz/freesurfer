@@ -11,7 +11,6 @@
 /* The following TAGs are in length-less format for mgz output:
  *   TAG_OLD_COLORTABLE
  *   TAG_GCAMORPH_GEOM
- *   TAG_GCAMORPH_GEOM_PLUSSHEAR
  *   TAG_GCAMORPH_TYPE
  *   TAG_GCAMORPH_LABELS
  *
@@ -63,7 +62,7 @@ long long FStagsIO::getlen_tag(int tag, long long len, bool niftiheaderext, bool
     dlen += 4;
   
     if (niftiheaderext ||
-        (tag != TAG_OLD_COLORTABLE && tag != TAG_GCAMORPH_GEOM && tag != TAG_GCAMORPH_GEOM_PLUSSHEAR &&
+        (tag != TAG_OLD_COLORTABLE && tag != TAG_GCAMORPH_GEOM &&
 	 tag != TAG_GCAMORPH_TYPE && tag != TAG_GCAMORPH_LABELS))
       dlen += sizeof(long long);
   }
@@ -315,7 +314,7 @@ int FStagsIO::write_tag(int tag, void *data, long long dlen)
   
   // ??? todo: check if tag is length-less
   if (niftiheaderext ||
-      (tag != TAG_OLD_COLORTABLE && tag != TAG_GCAMORPH_GEOM && TAG_GCAMORPH_GEOM_PLUSSHEAR &&
+      (tag != TAG_OLD_COLORTABLE && tag != TAG_GCAMORPH_GEOM &&
        tag != TAG_GCAMORPH_TYPE && tag != TAG_GCAMORPH_LABELS))
     znzwriteLong(dlen, fp);
   
@@ -500,7 +499,8 @@ int FStagsIO::write_mri_frames(MRI *mri)
 
 
 // write TAG_GCAMORPH_GEOM/TAG_GCAMORPH_GEOM_PLUSSHEAR
-// TAG_GCAMORPH_GEOM/TAG_GCAMORPH_GEOM_PLUSSHEAR is in length-less format if niftiheaderext = false
+// TAG_GCAMORPH_GEOM is in length-less format if niftiheaderext = false
+// TAG_GCAMORPH_GEOM_PLUSSHEAR has a length (shearless = false || niftiheader = true)
 int FStagsIO::write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shearless)
 {
   long long fstart = 0;
@@ -512,7 +512,7 @@ int FStagsIO::write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shear
     tag = TAG_GCAMORPH_GEOM_PLUSSHEAR;
   znzwriteInt(tag, fp);
   
-  if (niftiheaderext)
+  if (niftiheaderext || !shearless)
   {
     long long dlen = getlen_gcamorph_geom(source->fname, target->fname, niftiheaderext, false, shearless);
     znzwriteLong(dlen, fp);
@@ -742,7 +742,6 @@ int FStagsIO::read_tagid_len(long long *plen, int tagwithzerolen)
     case TAG_OLD_USEREALRAS:
     case TAG_OLD_COLORTABLE:
     case TAG_GCAMORPH_GEOM:
-    case TAG_GCAMORPH_GEOM_PLUSSHEAR:
     case TAG_GCAMORPH_TYPE:
     case TAG_GCAMORPH_LABELS:
       *plen = 0;  // these tags have no data-length output after tagid
