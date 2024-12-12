@@ -581,8 +581,8 @@ get_option(int argc, char *argv[])
   }
   else if (!stricmp(option, "threads"))
   {
-    int nthreads = atoi(argv[2]) ;
     #ifdef _OPENMP
+    int nthreads = atoi(argv[2]) ;
     omp_set_num_threads(nthreads);
     #endif
     nargs = 1 ;
