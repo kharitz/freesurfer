@@ -1383,7 +1383,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="spinBoxOverlayFrame"/>
+          <widget class="QSpinBox" name="spinBoxOverlayFrame">
+           <property name="wrapping">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
