@@ -847,14 +847,13 @@ endif
 set testvol = ()
 if($DoTest) set testvol = $outdir/test.nii.gz
 
-set ud1 = `UpdateNeeded $m3z $targvol $invol $testvol`
+set ud1 = `UpdateNeeded $m3z $targvol $invol`
 set ud2 = 0
 if($ComputeInverse) set ud2 = `UpdateNeeded $m3zinv $targvol $invol`
 if($ReRun == 0 && $ud1 == 0 && $ud2 == 0 && $ForceUpdate == 0) then
   echo "fs-synthmorph-reg: update not needed"
   exit 0
 endif
-
 
 goto check_params_return;
 ############--------------##################
