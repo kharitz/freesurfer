@@ -168,6 +168,7 @@ int sig2pmax = 0; // convert max value from -log10(p) to p
 MRI *fwhmmap=NULL; // map of vertex-wise FWHM for non-stationary correction
 char *maxareafile=NULL;
 char *surfpath = NULL;
+int  NClustersMax = -1;
 
 /*---------------------------------------------------------------*/
 int main(int argc, char **argv) {
@@ -438,6 +439,13 @@ int main(int argc, char **argv) {
   printf("Found %d clusters\n",NClusters);
   cmaxsize = sclustMaxClusterArea(scs, NClusters);
   printf("Max cluster size %lf\n",cmaxsize);
+  if(NClustersMax > 0 && NClusters > NClustersMax) {
+    printf("Only reporting on %d clusters\n",NClustersMax);
+    NClusters = NClustersMax;
+    for(int vtx = 0; vtx < srcsurf->nvertices; vtx++) {
+      if(srcsurf->vertices[vtx].undefval > NClustersMax) srcsurf->vertices[vtx].undefval = 0;
+    }
+  }
 
   /*---------------------------------------------------------*/
 
@@ -894,11 +902,18 @@ static int parse_commandline(int argc, char **argv) {
         exit(1);
       }
       nargsused = 1;
-    } else if (!strcmp(option, "--minarea")) {
+    } 
+    else if (!strcmp(option, "--minarea")) {
       if (nargc < 1) argnerr(option,1);
       sscanf(pargv[0],"%f",&minarea);
       nargsused = 1;
-    } else if (!strcmp(option, "--mask-sign")) {
+    } 
+    else if (!strcmp(option, "--nclusters-max")) {
+      if (nargc < 1) argnerr(option,1);
+      sscanf(pargv[0],"%d",&NClustersMax);
+      nargsused = 1;
+    } 
+    else if (!strcmp(option, "--mask-sign")) {
       if (nargc < 1) argnerr(option,1);
       masksignstr = pargv[0];
       if (!stringmatch(masksignstr,"abs") &&
@@ -1110,6 +1125,7 @@ static void print_usage(void) {
   printf("   --oannot annotname : output clusters as an annotation \n");
   printf("\n");
   printf("   --minarea  area      : area threshold for a cluster (mm^2)\n");
+  printf("   --nclusters-max nmax : only report on upto nmax clusters\n");
   printf("   --xfm xfmfile     : talairach transform (def is talairach.xfm) \n");
   printf("   --<no>fixmni      : <do not> fix MNI talairach coordinates\n");
   printf("   --sd subjects_dir : (default is env SUBJECTS_DIR)\n");
