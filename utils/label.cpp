@@ -4243,3 +4243,45 @@ int LabelVertexTableSortByVtxno(const void *p1, const void *p2)
   // change it to return 3 possible values
   return (vno1 - vno2);  // return (vno1 > vno2) ? 1 : 0;
 }
+
+/*!
+  LABEL *MRISseg2Label(MRIS *surf, MRI *seg, std::vector<int> segidlist)
+  Create a label from the surface seg by finding vertices in seg
+  whose seg value matches a value in segidlist. If segidlist is not
+  specified, it defaults to 1.
+ */
+LABEL *MRISseg2Label(MRIS *surf, MRI *seg, std::vector<int> segidlist)
+{
+  if(surf->nvertices != seg->width){
+    printf("ERROR: MRISseg2Label(): dim mismatch %d %d\n",surf->nvertices,seg->width);
+    return(NULL);
+  }
+
+  if(segidlist.size()==0) segidlist.push_back(1);
+  int nsegs = segidlist.size();
+
+  std::vector<int> vnolist;
+  for(int vno=0; vno < surf->nvertices; vno++){
+    int vsegid = MRIgetVoxVal(seg,vno,0,0,0);
+    for(int n=0; n < nsegs; n++){
+      if(vsegid != segidlist[n]) continue;
+      vnolist.push_back(vno);
+      break;
+    }
+  }
+  int nverts = vnolist.size();
+  printf("Found %d vertices in seg\n",(int)nverts);
+  LABEL *label = LabelAlloc(nverts+1, NULL, NULL);
+  label->n_points = nverts;
+  label->coords = LABEL_COORDS_TKREG_RAS;
+  for(int n=0; n < nverts; n++){
+    int vno = vnolist[n];
+    label->lv[n].vno = vno;
+    label->lv[n].x = surf->vertices[vno].x;
+    label->lv[n].y = surf->vertices[vno].y;
+    label->lv[n].z = surf->vertices[vno].z;
+    label->lv[n].stat = MRIgetVoxVal(seg,vno,0,0,0);
+  }
+
+  return(label);
+}

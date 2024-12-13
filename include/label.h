@@ -192,5 +192,6 @@ LABEL *LabelRemoveHolesSurf(MRIS *surf, LABEL *lb);
 LABEL *LabelRemoveHolesAndIslandsSurf(MRIS *surf, LABEL *lb);
 
 int LabelVertexTableSortByVtxno(const void *p1, const void *p2);
+LABEL *MRISseg2Label(MRIS *surf, MRI *seg, std::vector<int> segidlist={});
 
 #endif
