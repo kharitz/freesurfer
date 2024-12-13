@@ -104,7 +104,7 @@ static long long __getMRITAGlength(MRI *mri, bool niftiheaderext=false);
 static int __niiReadHeaderextension(znzFile fp, MRI *mri, const char *fname, int swapped_flag);
 static int __niiReadSetVox2ras(MRI *mri, struct nifti_1_header *niihdr);
 static void __readFSniiextensionHeader(znzFile fp, MRI *mri);
-static void __writeFSniiextensionHeader(znzFile fp, MRI *mri);
+static void __writeFSniiextensionHeader(znzFile fp, MRI *mri, int intent=MGZ_INTENT_UNKNOWN);
 
 MRI *mri_read(const char *fname, int type, int volume_flag, int start_frame, int end_frame, std::vector<MRI*> *mrivector=NULL);
 static MRI *corRead(const char *fname, int read_volume);
@@ -152,7 +152,7 @@ static MRI *nifti1Read(const char *fname, int read_volume);
 static int nifti1Write(MRI *mri, const char *fname);
 static MRI *niiRead(const char *fname, int read_volume);
 static MRI *niiReadFromMriFsStruct(MRIFSSTRUCT *mrifsStruct);
-static int niiWrite(MRI *mri, const char *fname);
+static int niiWrite(MRI *mri, const char *fname, int intent=MGZ_INTENT_UNKNOWN);
 static int itkMorphWrite(MRI *mri, const char *fname);
 static int niftiQformToMri(MRI *mri, struct nifti_1_header *hdr);
 static int mriToNiftiQform(MRI *mri, struct nifti_1_header *hdr);
@@ -1119,7 +1119,7 @@ MRI *MRIreadHeader(const char *fname, int type)
 
 } /* end MRIreadInfo() */
 
-int MRIwriteType(MRI *mri, const char *fname, int type)
+int MRIwriteType(MRI *mri, const char *fname, int type, int intent)
 {
   struct stat stat_buf;
   int error = 0;
@@ -1208,7 +1208,7 @@ int MRIwriteType(MRI *mri, const char *fname, int type)
     error = itkMorphWrite(mri, fname);
   }
   else if (type == MRI_MGH_FILE) {
-    error = mghWrite(mri, fname, -1);
+    error = mghWrite(mri, fname, -1, intent);
   }
   else if (type == GDF_FILE) {
     error = gdfWrite(mri, fname);
@@ -1218,7 +1218,7 @@ int MRIwriteType(MRI *mri, const char *fname, int type)
   }
   else if (type == NII_FILE) {
     // printf("Before writing nii file \n");
-    error = niiWrite(mri, fname);
+    error = niiWrite(mri, fname, intent);
     // printf("The error code is: %d\n", error);
   }
   else if (type == NRRD_FILE) {
@@ -1319,7 +1319,7 @@ int MRIwriteFrame(MRI *mri, const char *fname, int frame)
   return (NO_ERROR);
 }
 
-int MRIwrite(MRI *mri, const char *fname, std::vector<MRI*> *mriVector)
+int MRIwrite(MRI *mri, const char *fname, std::vector<MRI*> *mriVector, int intent)
 {
   int int_type = -1;
   int error = NO_ERROR;
@@ -1332,7 +1332,7 @@ int MRIwrite(MRI *mri, const char *fname, std::vector<MRI*> *mriVector)
 
   // (*mriVector).size() == 0, use MRI passed in
   if (mriVector == NULL || (*mriVector).size() <= 1)
-    error = MRIwriteType(mri, fname, int_type);
+    error = MRIwriteType(mri, fname, int_type, intent);
   else
   {
     char *fname_copy = new char[strlen(fname)+1];
@@ -1364,7 +1364,7 @@ int MRIwrite(MRI *mri, const char *fname, std::vector<MRI*> *mriVector)
         sprintf(tmp, "%s_%d.%s", fname_copy, n, ext);
       else
         sprintf(tmp, "%s%s.%s", fname_copy, ((*mriVector)[n])->fnamePostFixes, ext);
-      error = MRIwriteType((*mriVector)[n], tmp, int_type);
+      error = MRIwriteType((*mriVector)[n], tmp, int_type, intent);
     }
   }
 
@@ -9433,7 +9433,7 @@ static MRI *niiReadFromMriFsStruct(MRIFSSTRUCT *mrifsStruct)
   edit both. Automatically detects whether an input is Ico7
   and reshapes.
   -----------------------------------------------------------------*/
-static int niiWrite(MRI *mri0, const char *fname)
+static int niiWrite(MRI *mri0, const char *fname, int intent)
 {
   //znzFile fp;
   //int j, k, t;
@@ -9638,7 +9638,7 @@ static int niiWrite(MRI *mri0, const char *fname)
     znzwrite(&ecode, sizeof(int), 1, fp);
 
     // freesurfer header extension data is in big endian
-    __writeFSniiextensionHeader(fp, mri);
+    __writeFSniiextensionHeader(fp, mri, intent);
     MRITAGwrite(mri, fp, niftiheaderext);
 
     // pad header extension with 0 to multiple of 16 bytes
@@ -11128,7 +11128,7 @@ MRI *mghRead(const char *fname, int read_volume, int frame)
   return (mri);
 } // end mghRead()
 
-int mghWrite(MRI *mri, const char *fname, int frame)
+int mghWrite(MRI *mri, const char *fname, int frame, int intent)
 {
   znzFile fp;
   int ival, start_frame, end_frame, x, y, z, width, height, depth, unused_space_size;
@@ -11181,6 +11181,8 @@ int mghWrite(MRI *mri, const char *fname, int frame)
   height = mri->height;
   depth = mri->depth;
   // printf("(w,h,d) = (%d,%d,%d)\n", width, height, depth);
+  if (intent != MGZ_INTENT_UNKNOWN)
+    mri->version = ((intent & 0xff ) << 8) | MGH_VERSION;
   znzwriteInt(mri->version, fp);
   znzwriteInt(mri->width, fp);
   znzwriteInt(mri->height, fp);
@@ -12726,14 +12728,17 @@ void __readFSniiextensionHeader(znzFile fp, MRI *mri)
 // freesurfer nifti header extension data is in big endian
 // first 4 bytes are as following:
 //   endian (1 byte), intent (unsigned short, 2 bytes), version (1 byte)
-void __writeFSniiextensionHeader(znzFile fp, MRI *mri)
+void __writeFSniiextensionHeader(znzFile fp, MRI *mri, int intent0)
 {
   if (Gdiag & DIAG_INFO)
     printf("[DEBUG] __writeFSniiextensionHeader(): intent = %d, version = %d\n", mri->intent, mri->version);
   
   unsigned char extheader[4] = {'\0'};
   extheader[0] = '>';
-  
+
+  if (intent0 != MGZ_INTENT_UNKNOWN)
+    mri->version = ((intent0 & 0xff ) << 8) | MGH_VERSION;
+
   unsigned short intent = (mri->version >> 8) & 0xff;
   memcpy(&extheader[1], &intent, sizeof(short));
 #if (BYTE_ORDER == LITTLE_ENDIAN)

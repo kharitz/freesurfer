@@ -1722,9 +1722,9 @@ MRI *MRIreadType(const char *fname, int type);
 MRI *MRIreadInfo(const char *fname);
 MRI *MRIreadHeader(const char *fname, int type);
 int GetSPMStartFrame(void);
-int MRIwrite(MRI *mri,const  char *fname, std::vector<MRI*> *mriVector=NULL);
+int MRIwrite(MRI *mri,const  char *fname, std::vector<MRI*> *mriVector=NULL, int intent=MGZ_INTENT_UNKNOWN);
 int MRIwriteFrame(MRI *mri,const  char *fname, int frame) ;
-int MRIwriteType(MRI *mri,const  char *fname, int type);
+int MRIwriteType(MRI *mri,const  char *fname, int type, int intent=MGZ_INTENT_UNKNOWN);
 MRI *MRIreadRaw(FILE *fp, int width, int height, int depth, int type);
 int MRIreorderVox2RAS(MRI *mri_src, MRI *mri_dst, int xdim, int ydim, int zdim);
 MRI *MRIreorder(MRI *mri_src, MRI *mri_dst, int xdim, int ydim, int zdim);
@@ -1845,7 +1845,7 @@ MATRIX *GetSurfaceRASToVoxelMatrix(VOL_GEOM *mri);
 
 // functions read/write MRI_MGH_FILE
 MRI *mghRead(const char *fname, int read_volume=TRUE, int frame=-1);
-int mghWrite(MRI *mri, const char *fname, int frame=-1);
+int mghWrite(MRI *mri, const char *fname, int frame=-1, int intent=MGZ_INTENT_UNKNOWN);
 
 /* Zero-padding for 3d analyze (ie, spm) format */
 #ifdef _MRIIO_SRC
