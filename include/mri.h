@@ -174,7 +174,8 @@ MRI_REGION ;
 struct VOL_GEOM;
 class  FStagsIO;
 
-MATRIX *MRIxfmCRS2XYZ( const VOL_GEOM *mri, int base ); /* Native Vox2RAS Matrix (scanner and xfm too) */
+MATRIX *MRIxfmCRS2XYZ( const VOL_GEOM *mri, int base, bool useshear=false ); /* Native Vox2RAS Matrix (scanner and xfm too) */
+int MRIsetVox2RASFromMatrix(VOL_GEOM *mri, MATRIX *m_vox2ras);
 MATRIX *MRIxfmCRS2XYZtkreg( const VOL_GEOM *mri );      // TkReg  Vox2RAS Matrix
 MATRIX *VGras2tkreg(VOL_GEOM *vg, MATRIX *ras2tkreg);
 MATRIX *VGtkreg2RAS(VOL_GEOM *vg, MATRIX *tkreg2ras);
@@ -209,8 +210,8 @@ struct VOL_GEOM
   // The functions below compute these matrices on-the-fly
   // RAS = scanner RAS (sometimes known as "real" RAS in surface contexts)
   // TkregRAS = RAS used by tkregister; surface coords are by default in this TkregRAS space
-  MATRIX *get_Vox2RAS(int base=0){       return(MRIxfmCRS2XYZ(this,base));}
-  MATRIX *get_RAS2Vox(int base=0){       return(MatrixInverse(get_Vox2RAS(base),NULL));}
+  MATRIX *get_Vox2RAS(int base=0, bool useshear=false){       return(MRIxfmCRS2XYZ(this,base,useshear));}
+  MATRIX *get_RAS2Vox(int base=0, bool useshear=false){       return(MatrixInverse(get_Vox2RAS(base, useshear),NULL));}
   MATRIX *get_Vox2TkregRAS(void){  return(MRIxfmCRS2XYZtkreg(this));}
   MATRIX *get_TkregRAS2Vox(void){  return(MatrixInverse(get_Vox2TkregRAS(),NULL));}
   MATRIX *get_RAS2TkregRAS(void){  return(VGras2tkreg(this, NULL));}
@@ -248,6 +249,12 @@ struct VOL_GEOM
     
     strcpy(fname, vg.fname);
 
+    if (vg.i_to_r__)
+      i_to_r__ = AffineMatrixCopy(vg.i_to_r__, i_to_r__);
+
+    if (vg.r_to_i__)
+      r_to_i__ = MatrixCopy(vg.r_to_i__, r_to_i__);
+
 #if 0
     // ??? valid and ras_good_flag mean the same thing ???
     valid = (ras_good_flag) ? ras_good_flag : valid;
@@ -284,6 +291,12 @@ struct VOL_GEOM
     s_s = other.s_s;    
     
     strcpy(fname, other.fname);
+
+    if (other.i_to_r__)
+      i_to_r__ = AffineMatrixCopy(other.i_to_r__, i_to_r__);
+
+    if (other.r_to_i__)
+      r_to_i__ = MatrixCopy(other.r_to_i__, r_to_i__);
 
 #if 0
     // ??? valid and ras_good_flag mean the same thing ???
@@ -459,6 +472,20 @@ struct VOL_GEOM
 	  
 	}
       }
+    }
+  }
+
+  // remove shears if it is greater than threshold
+  // recompute voxsize and rotation, set shears to zero
+  void shearless_components()
+  {
+    if (s_r > 1e-5 || s_a > 1e-5 || s_s > 1e-5)
+    {
+      // i_to_r__ may not be computed with shears
+      // compute affine matrix with shears
+      MATRIX *tmp = MRIxfmCRS2XYZ(this, 0, true);  // extract_i_to_r(this);
+      MRIsetVox2RASFromMatrix(this, tmp);
+      s_r = s_a = s_s = 0;
     }
   }
 };
@@ -660,7 +687,6 @@ MATRIX *TkrRAS2VoxfromVolGeom(const VOL_GEOM *vg);
 
 MATRIX *MRIxfmCRS2XYZfsl(VOL_GEOM *mri);        // FSL/FLIRT  Vox2RAS Matrix
 
-int MRIsetVox2RASFromMatrix(VOL_GEOM *mri, MATRIX *m_vox2ras);
 int MRIsetVox2RASFromMatrixUnitTest(MRI *mri);
 MATRIX *MRItkRegMtxFromVox2Vox(VOL_GEOM *ref, VOL_GEOM *mov, MATRIX *vox2vox);//ras2ras from vox2vox
 MATRIX *MRItkReg2Native(VOL_GEOM *ref, VOL_GEOM *mov, MATRIX *R); /* tkreg2native (scanner and xfm too) */

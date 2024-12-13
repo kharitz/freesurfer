@@ -517,14 +517,27 @@ int FStagsIO::write_gcamorph_geom(VOL_GEOM *source, VOL_GEOM *target, bool shear
     long long dlen = getlen_gcamorph_geom(source->fname, target->fname, niftiheaderext, false, shearless);
     znzwriteLong(dlen, fp);
   }
-  
-  source->write(fp, niftiheaderext, shearless);
-  target->write(fp, niftiheaderext, shearless);
+
+  VOL_GEOM src_geom = *source;
+  VOL_GEOM trg_geom = *target;
+  if (shearless)
+  {
+    src_geom.shearless_components();
+    trg_geom.shearless_components();
+  }
+  src_geom.write(fp, niftiheaderext, shearless);
+  trg_geom.write(fp, niftiheaderext, shearless);
 
   if (Gdiag & DIAG_INFO)
   {
+    source->vgprint();
+    target->vgprint();
+    
     long long fend = znztell(fp);
     printf("[DEBUG] TAG = %-4d, dlen = %-6lld (%-6lld - %-6lld)\n", tag, fend-fstart, fstart, fend);
+
+    src_geom.vgprint();
+    trg_geom.vgprint();
   }
   
   return NO_ERROR;

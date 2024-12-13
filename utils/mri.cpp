@@ -572,7 +572,7 @@ MRI *MRIallocHeader(int width, int height, int depth, int type, int nframes)
 
   Note: MRIgetVoxelToRasXform is #defined to be extract_i_to_r().
   ----------------------------------------------------------------*/
-MATRIX *MRIxfmCRS2XYZ(const VOL_GEOM *mri, int base)
+MATRIX *MRIxfmCRS2XYZ(const VOL_GEOM *mri, int base, bool useshear)
 {
   MATRIX *m;
   MATRIX *Pcrs, *PxyzOffset;

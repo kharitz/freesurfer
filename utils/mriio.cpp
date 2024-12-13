@@ -12230,6 +12230,16 @@ void MRITAGread(MRI *mri, znzFile fp, const char *fname, bool niftiheaderext, lo
 	  mri->gcamorph_atlas_vg.vgprint(true);
 	}
 	break;
+      case TAG_GCAMORPH_GEOM_PLUSSHEAR:
+	// MGZ_INTENT_WARPMAP only
+	fstagsio.read_gcamorph_geom(&(mri->gcamorph_image_vg), &(mri->gcamorph_atlas_vg), false);
+        if (Gdiag & DIAG_INFO)
+	{
+	  printf("[DEBUG] MRITAGread() TAG_GCAMORPH_GEOM_PLUSSHEAR\n");
+	  mri->gcamorph_image_vg.vgprint(true);
+	  mri->gcamorph_atlas_vg.vgprint(true);
+	}
+	break;	
       case TAG_GCAMORPH_AFFINE:
 	// MGZ_INTENT_WARPMAP only	
         mri->gcamorphAffine = fstagsio.read_matrix();
@@ -12286,8 +12296,8 @@ void MRITAGwrite(MRI *mri, znzFile fp, bool niftiheaderext)
     // output TAG_GCAMORPH_GEOM
     fstagsio.write_gcamorph_geom(&mri->gcamorph_image_vg, &mri->gcamorph_atlas_vg);
 
-    mri->gcamorph_image_vg.vgprint();
-    mri->gcamorph_atlas_vg.vgprint();
+    // output TAG_GCAMORPH_GEOM_PLUSSHEAR
+    fstagsio.write_gcamorph_geom(&mri->gcamorph_image_vg, &mri->gcamorph_atlas_vg, false);
 
     // output TAG_GCAMORPH_META data-length data
     if (Gdiag & DIAG_INFO)
@@ -12409,7 +12419,13 @@ long long __getMRITAGlength(MRI *mri, bool niftiheaderext)
     dlen += taglen;
     if (Gdiag & DIAG_INFO)
       printf("[DEBUG] __getMRITAGlength(): +%-6lld, dlen = %-6lld (TAG = %-2d)\n", taglen, dlen, TAG_GCAMORPH_GEOM);
-    
+
+    // output TAG_GCAMORPH_GEOM_PLUSSHEAR
+    taglen = FStagsIO::getlen_gcamorph_geom((mri->gcamorph_image_vg).fname, (mri->gcamorph_atlas_vg).fname, niftiheaderext, true, false);
+    dlen += taglen;
+    if (Gdiag & DIAG_INFO)
+      printf("[DEBUG] __getMRITAGlength(): +%-6lld, dlen = %-6lld (TAG = %-2d)\n", taglen, dlen, TAG_GCAMORPH_GEOM_PLUSSHEAR);
+
     // output TAG_GCAMORPH_META data-length data
     taglen = FStagsIO::getlen_gcamorph_meta();  //sizeof(int) + sizeof(int) + sizeof(float);
     dlen += taglen;

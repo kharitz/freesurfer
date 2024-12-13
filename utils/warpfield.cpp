@@ -428,10 +428,10 @@ GCA_MORPH *Warpfield::read(const char *fname)
   }
   
   // pre-calulated transform matrix
-  __srcRAS2Vox = gcam->image.get_RAS2Vox();
-  __srcVox2RAS = gcam->image.get_Vox2RAS();
-  __dstRAS2Vox = gcam->atlas.get_RAS2Vox();
-  __dstVox2RAS = gcam->atlas.get_Vox2RAS();
+  __srcRAS2Vox = gcam->image.get_RAS2Vox(0, true);
+  __srcVox2RAS = gcam->image.get_Vox2RAS(0, true);
+  __dstRAS2Vox = gcam->atlas.get_RAS2Vox(0, true);
+  __dstVox2RAS = gcam->atlas.get_Vox2RAS(0, true);
 
   // pre-allocated MATRIX
   MATRIX *image_CRS  = MatrixAlloc(4, 1, MATRIX_REAL); 
