@@ -3,17 +3,17 @@ import numpy as np
 from typing import List, Optional, Union
 import torch
 from torch import nn
-from fireants.io.image import BatchedImages
+from ext.fireants.io.image import BatchedImages
 from torch.optim import SGD, Adam
 from torch.nn import functional as F
-from fireants.utils.globals import MIN_IMG_SIZE
-from fireants.io.image import BatchedImages
-from fireants.registration.abstract import AbstractRegistration
-from fireants.registration.deformation.compositive import CompositiveWarp
-from fireants.registration.deformation.geodesic import GeodesicShooting
-from fireants.losses.cc import gaussian_1d, separable_filtering
-from fireants.utils.imageutils import downsample
-from fireants.utils.util import compose_warp
+from ext.fireants.utils.globals import MIN_IMG_SIZE
+from ext.fireants.io.image import BatchedImages
+from ext.fireants.registration.abstract import AbstractRegistration
+from ext.fireants.registration.deformation.compositive import CompositiveWarp
+from ext.fireants.registration.deformation.geodesic import GeodesicShooting
+from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from ext.fireants.utils.imageutils import downsample
+from ext.fireants.utils.util import compose_warp
 
 class SyNRegistration(AbstractRegistration):
     '''
@@ -40,13 +40,13 @@ class SyNRegistration(AbstractRegistration):
                 init_affine: Optional[torch.Tensor] = None,
                 blur: bool = True,
                 optimize_inverse_warp_rev: bool = True,
-                custom_loss: nn.Module = None) -> None:
+                custom_loss: nn.Module = None, **kwargs) -> None:
         # initialize abstract registration
         # nn.Module.__init__(self)
         super().__init__(scales=scales, iterations=iterations, fixed_images=fixed_images, moving_images=moving_images, reduction=reduction,
                          loss_params=loss_params,
                          loss_type=loss_type, mi_kernel_type=mi_kernel_type, cc_kernel_type=cc_kernel_type, custom_loss=custom_loss, cc_kernel_size=cc_kernel_size,
-                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters)
+                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters, **kwargs)
         self.dims = fixed_images.dims
         self.blur = blur
         self.reduction = reduction
@@ -149,7 +149,7 @@ class SyNRegistration(AbstractRegistration):
             fixed_image_affinecoords = F.affine_grid(affine_map_init, fixed_image_down.shape, align_corners=True)
             fixed_image_vgrid  = F.affine_grid(init_grid, fixed_image_down.shape, align_corners=True)
             #### Optimize
-            pbar = tqdm(range(iters))
+            pbar = tqdm(range(iters)) if self.progress_bar else range(iters)
             if self.reduction == 'mean':
                 scale_factor = 1
             else:

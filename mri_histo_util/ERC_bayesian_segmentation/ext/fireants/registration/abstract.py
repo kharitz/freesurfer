@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List
 import torch
 from torch import nn
-from fireants.utils.util import _assert_check_scales_decreasing
-from fireants.losses import GlobalMutualInformationLoss, LocalNormalizedCrossCorrelationLoss
+from ext.fireants.utils.util import _assert_check_scales_decreasing
+from ext.fireants.losses import GlobalMutualInformationLoss, LocalNormalizedCrossCorrelationLoss
 from torch.optim import SGD, Adam
-from fireants.io.image import BatchedImages
+from ext.fireants.io.image import BatchedImages
 from typing import Optional
-from fireants.utils.util import ConvergenceMonitor
+from ext.fireants.utils.util import ConvergenceMonitor
 from torch.nn import functional as F
+from functools import partial
 
 def dummy_loss(*args):
     return 0
@@ -25,6 +26,7 @@ class AbstractRegistration(ABC):
                 cc_kernel_size: int = 3, 
                 reduction: str = 'mean',
                 tolerance: float = 1e-6, max_tolerance_iters: int = 10, 
+                progress_bar: bool = True,
                 ) -> None:
         '''
         Initialize abstract registration class
@@ -45,6 +47,7 @@ class AbstractRegistration(ABC):
 
         self.device = fixed_images.device
         self.dims = self.fixed_images.dims
+        self.progress_bar = progress_bar        # variable to show or hide progress bar
 
         # initialize losses
         if loss_type == 'mi':

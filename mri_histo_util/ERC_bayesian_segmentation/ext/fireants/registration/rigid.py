@@ -1,15 +1,15 @@
-from fireants.registration.abstract import AbstractRegistration
+from ext.fireants.registration.abstract import AbstractRegistration
 from typing import List, Optional
 import torch
 from torch import nn
-from fireants.io.image import BatchedImages
+from ext.fireants.io.image import BatchedImages
 from torch.optim import SGD, Adam
 from torch.nn import functional as F
 from tqdm import tqdm
 import numpy as np
-from fireants.losses.cc import gaussian_1d, separable_filtering
-from fireants.utils.imageutils import downsample
-from fireants.utils.globals import MIN_IMG_SIZE
+from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from ext.fireants.utils.imageutils import downsample
+from ext.fireants.utils.globals import MIN_IMG_SIZE
 
 class RigidRegistration(AbstractRegistration):
 
@@ -25,13 +25,13 @@ class RigidRegistration(AbstractRegistration):
                 init_translation: Optional[torch.Tensor] = None,
                 scaling: bool = False,
                 custom_loss: nn.Module = None, 
-                blur: bool = True,
+                blur: bool = True, **kwargs
                 ) -> None:
         super().__init__(scales=scales, iterations=iterations, fixed_images=fixed_images, moving_images=moving_images, 
                          loss_type=loss_type, mi_kernel_type=mi_kernel_type, cc_kernel_type=cc_kernel_type, custom_loss=custom_loss, 
                          loss_params=loss_params,
                          cc_kernel_size=cc_kernel_size,
-                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters)
+                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters, **kwargs)
         # initialize transform
         device = fixed_images.device
         self.dims = dims = self.moving_images.dims
@@ -134,7 +134,7 @@ class RigidRegistration(AbstractRegistration):
             fixed_image_coords_homo = torch.einsum('ntd, n...d->n...t', fixed_t2p, fixed_image_coords_homo)  # [N, H, W, [D], dims+1]  
             # print(fixed_image_down.min(), fixed_image_down.max())
             # this is in physical space
-            pbar = tqdm(range(iters))
+            pbar = tqdm(range(iters)) if self.progress_bar else range(iters)
             for i in pbar:
                 self.optimizer.zero_grad()
                 rigid_matrix = self.get_rigid_matrix()
@@ -150,7 +150,8 @@ class RigidRegistration(AbstractRegistration):
                 if self.convergence_monitor.converged(cur_loss):
                     break
                 prev_loss = cur_loss
-                pbar.set_description("scale: {}, iter: {}/{}, loss: {:4f}".format(scale, i, iters, prev_loss))
+                if self.progress_bar:
+                    pbar.set_description("scale: {}, iter: {}/{}, loss: {:4f}".format(scale, i, iters, prev_loss))
             # save transformed images
             if save_transformed:
                 transformed_images.append(moved_image)
@@ -159,7 +160,7 @@ class RigidRegistration(AbstractRegistration):
 
 
 if __name__ == '__main__':
-    from fireants.io.image import Image, BatchedImages
+    from ext.fireants.io.image import Image, BatchedImages
     img1 = Image.load_file('/data/rohitrango/BRATS2021/training/BraTS2021_00598/BraTS2021_00598_t1.nii.gz')
     img2 = Image.load_file('/data/rohitrango/BRATS2021/training/BraTS2021_00599/BraTS2021_00599_t1.nii.gz')
     fixed = BatchedImages([img1, ])

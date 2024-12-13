@@ -3,10 +3,10 @@ import torch
 from torch import nn
 from tqdm import tqdm
 import torch.nn.functional as F
-from fireants.utils.util import catchtime
+from ext.fireants.utils.util import catchtime
 from typing import Optional, List
-from fireants.losses.cc import gaussian_1d, separable_filtering
-from fireants.types import ItemOrList
+from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from ext.fireants.types import ItemOrList
 
 def lie_bracket(u: torch.Tensor, v: torch.Tensor):
     if len(u.shape) == 4:

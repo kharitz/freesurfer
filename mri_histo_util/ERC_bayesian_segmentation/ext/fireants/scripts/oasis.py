@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import SimpleITK as sitk
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
-from fireants.io.image import Image, BatchedImages
-from fireants.registration.affine import AffineRegistration
-from fireants.registration.greedy import GreedyRegistration
-from fireants.registration.syn import SyNRegistration
+from ext.fireants.io.image import Image, BatchedImages
+from ext.fireants.registration.affine import AffineRegistration
+from ext.fireants.registration.greedy import GreedyRegistration
+from ext.fireants.registration.syn import SyNRegistration
 import argparse
 from tqdm import tqdm
 # from evaluate_metrics import compute_metrics
@@ -18,7 +18,7 @@ from torch.nn import functional as F
 from ray import tune, air
 import os.path as osp
 import ray
-from fireants.scripts.evalutils import compute_metrics
+from ext.fireants.scripts.evalutils import compute_metrics
 
 # ROOT_DIR = "/data/rohitrango/OASIS/"
 ROOT_DIR = "/mnt/rohit_data2/neurite-OASIS"
@@ -181,5 +181,3 @@ if __name__ == '__main__':
                 'cc_size': 2,
             }
         register_val_dataset(config, test=True)
-
-    

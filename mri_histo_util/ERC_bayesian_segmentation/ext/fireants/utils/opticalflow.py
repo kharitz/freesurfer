@@ -3,10 +3,10 @@ Methods for implementing optical flow algorithms (used by logDemon variants).
 '''
 import torch
 from torch import nn
-from fireants.utils.imageutils import image_gradient_nograd, image_gradient 
-from fireants.types import devicetype
-from fireants.losses.cc import separable_filtering, gaussian_1d
-from fireants.utils.util import catchtime
+from ext.fireants.utils.imageutils import image_gradient_nograd, image_gradient
+from ext.fireants.types import devicetype
+from ext.fireants.losses.cc import separable_filtering, gaussian_1d
+from ext.fireants.utils.util import catchtime
 
 class OpticalFlow(nn.Module):
     '''

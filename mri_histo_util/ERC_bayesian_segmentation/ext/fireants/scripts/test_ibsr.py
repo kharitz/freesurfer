@@ -3,10 +3,10 @@ from glob import glob
 import time
 import numpy as np
 import torch
-from fireants.io.image import Image, BatchedImages
-from fireants.registration.affine import AffineRegistration
-from fireants.registration.greedy import GreedyRegistration
-from fireants.registration.syn import SyNRegistration
+from ext.fireants.io.image import Image, BatchedImages
+from ext.fireants.registration.affine import AffineRegistration
+from ext.fireants.registration.greedy import GreedyRegistration
+from ext.fireants.registration.syn import SyNRegistration
 import argparse
 from tqdm import tqdm
 from evaluate_metrics import compute_metrics

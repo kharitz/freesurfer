@@ -6,14 +6,14 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from typing import Union
-from fireants.registration.deformation.abstract import AbstractDeformation
-from fireants.io.image import Image, BatchedImages
-from fireants.utils.imageutils import scaling_and_squaring, _find_integrator_n
-from fireants.types import devicetype
-from fireants.losses.cc import gaussian_1d, separable_filtering
-from fireants.utils.util import grad_smoothing_hook
-from fireants.utils.imageutils import compute_inverse_warp_exp
-from fireants.utils.globals import MIN_IMG_SIZE
+from ext.fireants.registration.deformation.abstract import AbstractDeformation
+from ext.fireants.io.image import Image, BatchedImages
+from ext.fireants.utils.imageutils import scaling_and_squaring, _find_integrator_n
+from ext.fireants.types import devicetype
+from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from ext.fireants.utils.util import grad_smoothing_hook
+from ext.fireants.utils.imageutils import compute_inverse_warp_exp
+from ext.fireants.utils.globals import MIN_IMG_SIZE
 from copy import deepcopy
 
 class GeodesicShooting(nn.Module, AbstractDeformation):

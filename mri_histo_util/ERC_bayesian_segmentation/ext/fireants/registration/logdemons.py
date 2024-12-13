@@ -1,18 +1,18 @@
-from fireants.registration.abstract import AbstractRegistration
+from ext.fireants.registration.abstract import AbstractRegistration
 from typing import List, Optional
 import torch
 from torch import nn
-from fireants.io.image import BatchedImages
+from ext.fireants.io.image import BatchedImages
 from torch.optim import SGD, Adam
 from torch.nn import functional as F
-from fireants.utils.globals import MIN_IMG_SIZE
+from ext.fireants.utils.globals import MIN_IMG_SIZE
 from tqdm import tqdm
 import numpy as np
-from fireants.utils.opticalflow import OpticalFlow
-from fireants.losses.cc import gaussian_1d, separable_filtering
-from fireants.utils.imageutils import downsample
-from fireants.utils.imageutils import scaling_and_squaring
-from fireants.utils.imageutils import lie_bracket
+from ext.fireants.utils.opticalflow import OpticalFlow
+from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from ext.fireants.utils.imageutils import downsample
+from ext.fireants.utils.imageutils import scaling_and_squaring
+from ext.fireants.utils.imageutils import lie_bracket
 
 class LogDemonsRegistration(AbstractRegistration):
     '''
