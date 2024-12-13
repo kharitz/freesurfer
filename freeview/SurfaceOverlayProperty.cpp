@@ -296,7 +296,11 @@ void SurfaceOverlayProperty::SetColorScale( int nScale )
 
           float red, green, blue, alpha;
           CTABrgbaAtIndexf( ctab, nEntry, &red, &green, &blue, &alpha );
-          m_lut->AddRGBAPoint( nEntry, red, green, blue, 1 );
+          char name[128] = {0};
+          if (CTABcopyName(ctab, nEntry, name, 128 ) == 0 && QString(name).toLower() == "unknown")
+            m_lut->AddRGBAPoint( nEntry, 0, 0, 0, 0 );
+          else
+            m_lut->AddRGBAPoint( nEntry, red, green, blue, 1 );
         }
         else if (last_is_valid)
         {
@@ -738,9 +742,12 @@ void SurfaceOverlayProperty::MapOverlayColorFullScale( float* data, unsigned cha
     if (bInMask && data[i] >= dThLow && data[i] <= dThHigh)
     {
       m_lut->GetColor( data[i], c );
-      colordata[i*4] = ( int )( colordata[i*4] * ( 1 - m_dOpacity ) + c[0]*255 * m_dOpacity );
-      colordata[i*4+1] = ( int )( colordata[i*4+1] * ( 1 - m_dOpacity ) + c[1]*255 * m_dOpacity );
-      colordata[i*4+2] = ( int )( colordata[i*4+2] * ( 1 - m_dOpacity ) + c[2]*255 * m_dOpacity );
+      if (c[3] != 0)
+      {
+        colordata[i*4] = ( int )( colordata[i*4] * ( 1 - m_dOpacity ) + c[0]*255 * m_dOpacity );
+        colordata[i*4+1] = ( int )( colordata[i*4+1] * ( 1 - m_dOpacity ) + c[1]*255 * m_dOpacity );
+        colordata[i*4+2] = ( int )( colordata[i*4+2] * ( 1 - m_dOpacity ) + c[2]*255 * m_dOpacity );
+      }
     }
   }
 }
