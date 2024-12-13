@@ -6175,6 +6175,10 @@ MRI *MRIcopyHeader(const MRI *mri_src, MRI *mri_dst)
   if (mri_dst == NULL)
     mri_dst = MRIallocHeader(mri_src->width, mri_src->height, mri_src->depth, mri_src->type, mri_src->nframes);
 
+  // copy the version and intent
+  mri_dst->version = mri_src->version;
+  mri_dst->intent  = mri_src->intent;
+
   mri_dst->dof = mri_src->dof;
   mri_dst->mean = mri_src->mean;
   mri_dst->xsize = mri_src->xsize;
