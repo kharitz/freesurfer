@@ -11,7 +11,7 @@
 /* This class implements methods
  *   1. reads mgz warp file into GCAM
  *   2. converts GCAM to mgz warp format
- *   3. writes warp in mgz format (version = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION).
+ *   3. writes warp in mgz format (version = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION).
  *
  * The warp file follows mgz format with these tags:
  *   TAG_GCAMORPH_GEOM             followed by gcamorph image (source) geom and gcamorph atlas (target) geom
@@ -42,7 +42,7 @@ Warpfield::Warpfield()
 {
   __warpmap = NULL;  __warpmap_inv = NULL;
   __invert = 0;
-  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
 
   __srcRAS2Vox = NULL;
   __srcVox2RAS = NULL;
@@ -128,7 +128,7 @@ MRI* Warpfield::convert(GCA_MORPH *gcam, const int dataformat, int doGCAMsampleM
   //__warpmap = new MRI(gcam->atlas, MRI_FLOAT, 3, 0);  //__warpmap = new MRI({gcam->atlas.width, gcam->atlas.height, gcam->atlas.depth, 3}, MRI_FLOAT);
 
   // TAG_GCAMORPH_META
-  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
   __warpmap->version = __mgzVersion;
   __warpmap->warpFieldFormat = dataformat;
   __warpmap->gcamorphSpacing = gcam->spacing;
@@ -264,7 +264,7 @@ MRI* Warpfield::invert(GCA_MORPH *gcam, const int dataformat)
   // create MRI using image vol_geom
   __warpmap = new MRI(gcam->image, MRI_FLOAT, 4, 0);
 
-  __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xff ) << 8) | MGH_VERSION;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xffff ) << 8) | MGH_VERSION;
   __warpmap->version = __mgzVersion;
   __warpmap->warpFieldFormat = dataformat;
   __warpmap->gcamorphSpacing = gcam->spacing;
@@ -384,7 +384,7 @@ GCA_MORPH *Warpfield::read(const char *fname)
   }
   
   // the function doesn't handle invert warp
-  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
 
   __warpmap = MRIread(fname);  //mghRead(fname);
   if (__warpmap == NULL)
@@ -530,7 +530,7 @@ int Warpfield::write(const char *fname)
   }
   
   if (__invert)
-    __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xff ) << 8) | MGH_VERSION;
+    __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xffff ) << 8) | MGH_VERSION;
 
   int ret = MRIwrite(__warpmap, fname);  //mghWrite(__warpmap, fname);
   if (ret)
@@ -561,7 +561,7 @@ void Warpfield::create(int width, int height, int depth, const VOL_GEOM& srcVG, 
   MRIcopyVolGeomToMRI(__warpmap, &dstVG);
 
   // TAG_GCAMORPH_META
-  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xff ) << 8) | MGH_VERSION;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
   __warpmap->version = __mgzVersion;
   __warpmap->warpFieldFormat = dataformat;
   __warpmap->gcamorphSpacing = spacing;

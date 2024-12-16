@@ -7669,7 +7669,7 @@ MRI *MRISreadCurvAsMRI(const char *curvfile, int read_volume)
   }
 
   curvmri = MRIalloc(vnum, 1, 1, MRI_FLOAT);
-  curvmri->version = ((MGZ_INTENT_SHAPE & 0xff ) << 8) | MGH_VERSION;
+  curvmri->version = ((MGZ_INTENT_SHAPE & 0xffff ) << 8) | MGH_VERSION;
   for (k = 0; k < vnum; k++) {
     curv = freadFloat(fp);
     MRIsetVoxVal(curvmri, k, 0, 0, 0, curv);
@@ -10857,8 +10857,11 @@ MRI *mghRead(const char *fname, int read_volume, int frame)
     mri = MRIallocHeader(width, height, depth, type, nframes);
     mri->dof = dof;
     mri->nframes = nframes;
-    mri->version = version;                // version saved in mgz
-    mri->intent  = (version >> 8) & 0xff;  // content of the mgz file, annot, curv, warp, ...
+    mri->version = version;                  // version saved in mgz
+    mri->intent  = (version >> 8) & 0xffff;  // content of the mgz file, annot, curv, warp, ...
+    if (Gdiag & DIAG_INFO)
+      printf("[DEBUG] mghRead() mri->intent = %d, mri->version = %d\n", mri->intent, mri->version);
+  
     if (gzipped) {  // pipe cannot seek
       long count, total_bytes;
       uchar buf[STRLEN];
@@ -10896,7 +10899,9 @@ MRI *mghRead(const char *fname, int read_volume, int frame)
     mri->dof = dof;
 
     mri->version = version;                // version saved in mgz
-    mri->intent  = (version >> 8) & 0xff;  // content of the mgz file, annot, curv, warp, ...
+    mri->intent  = (version >> 8) & 0xffff;  // content of the mgz file, annot, curv, warp, ...
+    if (Gdiag & DIAG_INFO)
+      printf("[DEBUG] mghRead() mri->intent = %d, mri->version = %d\n", mri->intent, mri->version);    
     
     struct timespec begin, end;
     if (getenv("FS_MGZIO_TIMING"))
@@ -11182,7 +11187,10 @@ int mghWrite(MRI *mri, const char *fname, int frame, int intent)
   depth = mri->depth;
   // printf("(w,h,d) = (%d,%d,%d)\n", width, height, depth);
   if (intent != MGZ_INTENT_UNKNOWN)
-    mri->version = ((intent & 0xff ) << 8) | MGH_VERSION;
+  {
+    mri->intent  = intent;
+    mri->version = ((intent & 0xffff ) << 8) | MGH_VERSION;
+  }
   znzwriteInt(mri->version, fp);
   znzwriteInt(mri->width, fp);
   znzwriteInt(mri->height, fp);
@@ -11221,6 +11229,8 @@ int mghWrite(MRI *mri, const char *fname, int frame, int intent)
 
   if (Gdiag & DIAG_INFO)
   {
+    printf("[DEBUG] mghWrite() intent (user) = %d, mri->intent (new) = %d, mri->version (new) = %d\n", intent, mri->intent, mri->version);
+    
     long long here = znztell(fp);
     printf("[DEBUG] mghWrite() fpos = %-6lld (after header, before 4D data)\n", here);
   }
@@ -12717,29 +12727,33 @@ void __readFSniiextensionHeader(znzFile fp, MRI *mri)
 
   unsigned short intentcode;
   memcpy(&intentcode, &intent, sizeof(intentcode));
-  unsigned char version = extheader[3];
-  mri->version = ((intentcode & 0xff) << 8) | version;
+  unsigned char mgh_version = extheader[3];
+  mri->version = ((intentcode & 0xffff) << 8) | mgh_version;
   mri->intent  = intentcode;
   if (Gdiag & DIAG_INFO)
-    printf("[DEBUG] __readFSniiextensionHeader(): intent = %d, version = %d\n", mri->intent, mri->version);
+    printf("[DEBUG] __readFSniiextensionHeader(): intent = %d, mgh version = %d, mri->version = %d\n", mri->intent, mgh_version, mri->version);
 }  // end of __readFSniiextensionHeader()
 
 
 // freesurfer nifti header extension data is in big endian
 // first 4 bytes are as following:
 //   endian (1 byte), intent (unsigned short, 2 bytes), version (1 byte)
-void __writeFSniiextensionHeader(znzFile fp, MRI *mri, int intent0)
+void __writeFSniiextensionHeader(znzFile fp, MRI *mri, int intentcode)
 {
   if (Gdiag & DIAG_INFO)
-    printf("[DEBUG] __writeFSniiextensionHeader(): intent = %d, version = %d\n", mri->intent, mri->version);
+    printf("[DEBUG] __writeFSniiextensionHeader(): intent (user) = %d, mri->intent (orig) = %d, mri->version (orig) = %d\n", intentcode, mri->intent, mri->version);
   
   unsigned char extheader[4] = {'\0'};
   extheader[0] = '>';
 
-  if (intent0 != MGZ_INTENT_UNKNOWN)
-    mri->version = ((intent0 & 0xff ) << 8) | MGH_VERSION;
+  unsigned short intent = (mri->version >> 8) & 0xffff;
+  if (intentcode != MGZ_INTENT_UNKNOWN)
+  {
+    intent = intentcode;
+    mri->intent  = intent;
+    mri->version = ((intent & 0xffff ) << 8) | MGH_VERSION;
+  }
 
-  unsigned short intent = (mri->version >> 8) & 0xff;
   memcpy(&extheader[1], &intent, sizeof(short));
 #if (BYTE_ORDER == LITTLE_ENDIAN)
   unsigned char c = extheader[1];
@@ -12749,10 +12763,13 @@ void __writeFSniiextensionHeader(znzFile fp, MRI *mri, int intent0)
     printf("[DEBUG] __writeFSniiextensionHeader(): intent swapped byte order (%02x %02x) => (%02x %02x)\n", c, extheader[1], extheader[1], extheader[2]);
 #endif
 
-  unsigned char version = mri->version & 0xff;
-  extheader[3] = version;
+  unsigned char mgh_version = mri->version & 0xff;  // 1 byte for version
+  extheader[3] = mgh_version;
   if (Gdiag & DIAG_INFO)
+  {  
+    printf("[DEBUG] __writeFSniiextensionHeader(): intent = %d, mgh version = %d, mri->intent (new) = %d, mri->version (new) = %d\n", intent, mgh_version, mri->intent, mri->version);   
     printf("[DEBUG] __writeFSniiextensionHeader(): %02x %02x %02x %02x\n", extheader[0], extheader[1], extheader[2], extheader[3]);
+  }
   
   znzwrite(extheader, sizeof(unsigned char), 4, fp);  // output intent encoded version
 }  // end of __writeFSniiextensionHeader()

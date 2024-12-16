@@ -1339,14 +1339,14 @@ MRI *MRISreadGiftiAsMRI(const char *fname, int read_volume)
   {
     // The value at each node is a key into the LabelTable
     intent = MGZ_INTENT_LABEL;
-    version = ((intent & 0xff ) << 8) | MGH_VERSION;
+    version = ((intent & 0xffff ) << 8) | MGH_VERSION;
     dtype  = MRI_INT;
     ct = readLabelTable(image, fname);
   }
   else if (intent_code[intent_code_idx] == NIFTI_INTENT_SHAPE)
   {
     intent = MGZ_INTENT_SHAPE;
-    version = ((intent & 0xff ) << 8) | MGH_VERSION;
+    version = ((intent & 0xffff ) << 8) | MGH_VERSION;
   }
       
   printf("INFO: Found %d %s DataArray\n", frame_count, gifti_intent_to_string(intent_code[intent_code_idx]));

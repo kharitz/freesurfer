@@ -495,8 +495,8 @@ typedef VOL_GEOM VG;
 #define MGH_VERSION 1   // this is the mgz format version
 
 // version number in .mgz will be constructed using these defines
-// ex.  ((MGZ_INTENT_WARPMAP     & 0xff ) << 8) | MGH_VERSION
-//      ((MGZ_INTENT_WARPMAP_INV & 0xff ) << 8) | MGH_VERSION
+// ex.  ((MGZ_INTENT_WARPMAP     & 0xffff ) << 8) | MGH_VERSION
+//      ((MGZ_INTENT_WARPMAP_INV & 0xffff ) << 8) | MGH_VERSION
 #define MGZ_INTENT_UNKNOWN     -1
 #define MGZ_INTENT_MRI          0
 #define MGZ_INTENT_LABEL        1
