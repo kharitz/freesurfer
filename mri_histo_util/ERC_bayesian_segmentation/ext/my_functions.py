@@ -59,13 +59,20 @@ def cropLabelVolTorch(V,
     j2 = torch.max(idx[1]) + margin
     k2 = torch.max(idx[2]) + margin
     # out of bounds check
+    i1 = i1 if i1>=0 else torch.tensor(0, device=V.device, dtype=torch.long)
+    j1 = j1 if j1 >= 0 else torch.tensor(0, device=V.device, dtype=torch.long)
+    k1 = k1 if k1 >= 0 else torch.tensor(0, device=V.device, dtype=torch.long)
+    i2 = i2 if i2 < V.shape[0] else torch.tensor(V.shape[0] - 1, device=V.device, dtype=torch.long)
+    j2 = j2 if j2 < V.shape[1] else torch.tensor(V.shape[0] - 1, device=V.device, dtype=torch.long)
+    k2 = k2 if k2 < V.shape[2] else torch.tensor(V.shape[0] - 1, device=V.device, dtype=torch.long)
+    """
     i1 = i1 if i1>=0 else 0
     j1 = j1 if j1 >= 0 else 0
     k1 = k1 if k1 >= 0 else 0
     i2 = i2 if i2 < V.shape[0] else (V.shape[0] - 1)
     j2 = j2 if j2 < V.shape[1] else (V.shape[1] - 1)
     k2 = k2 if k2 < V.shape[2] else (V.shape[2] - 1)
-
+    """
     cropping = [i1, j1, k1, i2, j2, k2]
     cropped = V[i1:i2, j1:j2, k1:k2]
 

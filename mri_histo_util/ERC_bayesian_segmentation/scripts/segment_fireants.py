@@ -6,6 +6,8 @@ sys.path.append(basepath)
 from pathlib import Path
 BASE_PATH = str(Path(__file__).resolve().parents[1])
 sys.path.append(str(Path(__file__).resolve().parents[1]))
+FIREANTS_PATH = os.path.join(os.environ.get('FREESURFER_HOME'),'python/packages/ERC_bayesian_segmentation/ext')
+sys.path.append(FIREANTS_PATH)
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -19,8 +21,10 @@ import csv
 import argparse
 import math
 from torch.nn.functional import grid_sample
-from fireants.io import Image,BatchedImages
-from fireants.registration import AffineRegistration, GreedyRegistration
+#from fireants.io import Image,BatchedImages
+#from fireants.registration import AffineRegistration, GreedyRegistration
+from ext.fireants.io import Image,BatchedImages
+from ext.fireants.registration import AffineRegistration, GreedyRegistration
 import SimpleITK as sitk
 from time import time
 from ERC_bayesian_segmentation.custom_cc_labeldiff_loss import HybridDiceLabelDiffloss
