@@ -673,6 +673,14 @@ int FStagsIO::write_ras_xform(MRI *mri)
 
   if (Gdiag & DIAG_INFO)
   {
+    printf("[DEBUG] FStagsIO::write_ras_xform() ras xform info:\n");
+    printf("              : x_r = %8.4f, y_r = %8.4f, z_r = %8.4f, c_r = %10.4f\n",
+	   mri->x_r, mri->y_r, mri->z_r, mri->c_r);
+    printf("              : x_a = %8.4f, y_a = %8.4f, z_a = %8.4f, c_a = %10.4f\n",
+	   mri->x_a, mri->y_a, mri->z_a, mri->c_a);
+    printf("              : x_s = %8.4f, y_s = %8.4f, z_s = %8.4f, c_s = %10.4f\n",
+	   mri->x_s, mri->y_s, mri->z_s, mri->c_s);
+
     long long fend = znztell(fp);
     printf("[DEBUG] TAG = %-4d, dlen = %-6lld (%-6lld - %-6lld)\n", TAG_RAS_XFORM, fend-fstart, fstart, fend);
   }
@@ -987,7 +995,18 @@ int FStagsIO::read_ras_xform(MRI *mri)
   mri->y_r = znzreadFloat(fp); mri->y_a = znzreadFloat(fp); mri->y_s = znzreadFloat(fp);
   mri->z_r = znzreadFloat(fp); mri->z_a = znzreadFloat(fp); mri->z_s = znzreadFloat(fp);
   mri->c_r = znzreadFloat(fp); mri->c_a = znzreadFloat(fp); mri->c_s = znzreadFloat(fp);
-  
+
+  if (Gdiag & DIAG_INFO)
+  {
+    printf("[DEBUG] FStagsIO::read_ras_xform() ras xform_info:\n");
+    printf("              : x_r = %8.4f, y_r = %8.4f, z_r = %8.4f, c_r = %10.4f\n",
+	   mri->x_r, mri->y_r, mri->z_r, mri->c_r);
+    printf("              : x_a = %8.4f, y_a = %8.4f, z_a = %8.4f, c_a = %10.4f\n",
+	   mri->x_a, mri->y_a, mri->z_a, mri->c_a);
+    printf("              : x_s = %8.4f, y_s = %8.4f, z_s = %8.4f, c_s = %10.4f\n",
+	   mri->x_s, mri->y_s, mri->z_s, mri->c_s);
+  }
+
   return NO_ERROR;  
 }
 

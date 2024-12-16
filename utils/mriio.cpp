@@ -8498,7 +8498,7 @@ static MRI *niiRead(const char *fname, int read_volume)
     }
     else if (hdr.datatype == DT_UINT16) {
       // This will not always work ...
-      fprintf(stderr,"INFO: This is an unsigined short.\n");    // I'll try to read it, but\n");
+      fprintf(stderr,"INFO: This is an unsigned short.\n");    // I'll try to read it, but\n");
       //printf("      it might not work if there are values over 32k\n");
       fs_type = MRI_USHRT;
       bytes_per_voxel = 2;
@@ -8613,6 +8613,17 @@ static MRI *niiRead(const char *fname, int read_volume)
     if (ret)  // error
       return NULL;
   }
+
+  if (Gdiag & DIAG_INFO)
+  {
+    printf("[DEBUG] niiRead() xform_info:\n");
+    printf("              : x_r = %8.4f, y_r = %8.4f, z_r = %8.4f, c_r = %10.4f\n",
+	   mri->x_r, mri->y_r, mri->z_r, mri->c_r);
+    printf("              : x_a = %8.4f, y_a = %8.4f, z_a = %8.4f, c_a = %10.4f\n",
+	   mri->x_a, mri->y_a, mri->z_a, mri->c_a);
+    printf("              : x_s = %8.4f, y_s = %8.4f, z_s = %8.4f, c_s = %10.4f\n",
+	   mri->x_s, mri->y_s, mri->z_s, mri->c_s);
+  }  
 
   mri->xsize = mri->xsize * space_units_factor;
   mri->ysize = mri->ysize * space_units_factor;
@@ -10026,9 +10037,15 @@ static int niftiSformToMri(MRI *mri, struct nifti_1_header *hdr)
   sform->rptr[1][4] = hdr->srow_x[3];
   sform->rptr[2][4] = hdr->srow_y[3];
   sform->rptr[3][4] = hdr->srow_z[3];
-  // MatrixPrint(stdout,sform);
+  if (Gdiag & DIAG_INFO)
+  {
+    printf("[DEBUG] niftiSformToMri() sform:\n");
+    MatrixPrint(stdout,sform);
+  }
+
   err = MRIsetVox2RASFromMatrix(mri, sform);
   MatrixFree(&sform);
+  
   return (err);
 } /* end niftiSformToMri() */
 

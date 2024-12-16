@@ -411,6 +411,16 @@ GCA_MORPH *Warpfield::read(const char *fname)
   gcam->image = __warpmap->gcamorph_image_vg;
   gcam->atlas = __warpmap->gcamorph_atlas_vg;
 
+  // pre-calulated transform matrix taking shears into consideration
+  __srcRAS2Vox = gcam->image.get_RAS2Vox(0, true);
+  __srcVox2RAS = gcam->image.get_Vox2RAS(0, true);
+  __dstRAS2Vox = gcam->atlas.get_RAS2Vox(0, true);
+  __dstVox2RAS = gcam->atlas.get_Vox2RAS(0, true);
+
+  // remove shear components
+  gcam->image.shearless_components();
+  gcam->atlas.shearless_components();
+
   if (__warpmap->gcamorphAffine)
   {
     printf("[DEBUG] Warpfield::read() __warpmap->gcamorphAffine (spacing=%d, exp-k=%.2f):\n", __warpmap->gcamorphSpacing, __warpmap->gcamorphExp_k);
@@ -427,12 +437,6 @@ GCA_MORPH *Warpfield::read(const char *fname)
     gcam->status = GCAM_LABELED;
   }
   
-  // pre-calulated transform matrix
-  __srcRAS2Vox = gcam->image.get_RAS2Vox(0, true);
-  __srcVox2RAS = gcam->image.get_Vox2RAS(0, true);
-  __dstRAS2Vox = gcam->atlas.get_RAS2Vox(0, true);
-  __dstVox2RAS = gcam->atlas.get_Vox2RAS(0, true);
-
   // pre-allocated MATRIX
   MATRIX *image_CRS  = MatrixAlloc(4, 1, MATRIX_REAL); 
   MATRIX *image_RAS  = MatrixAlloc(4, 1, MATRIX_REAL); 
