@@ -6,13 +6,13 @@ import numpy as np
 from typing import List, Optional, Union
 from tqdm import tqdm
 
-from ext.fireants.utils.globals import MIN_IMG_SIZE
-from ext.fireants.io.image import BatchedImages
-from ext.fireants.registration.abstract import AbstractRegistration
-from ext.fireants.registration.deformation.geodesic import GeodesicShooting
-from ext.fireants.registration.deformation.compositive import CompositiveWarp
-from ext.fireants.losses.cc import gaussian_1d, separable_filtering
-from ext.fireants.utils.imageutils import downsample
+from fireants.utils.globals import MIN_IMG_SIZE
+from fireants.io.image import BatchedImages
+from fireants.registration.abstract import AbstractRegistration
+from fireants.registration.deformation.geodesic import GeodesicShooting
+from fireants.registration.deformation.compositive import CompositiveWarp
+from fireants.losses.cc import gaussian_1d, separable_filtering
+from fireants.utils.imageutils import downsample
 
 class GreedyRegistration(AbstractRegistration):
     '''
@@ -38,14 +38,14 @@ class GreedyRegistration(AbstractRegistration):
                 tolerance: float = 1e-6, max_tolerance_iters: int = 10, 
                 init_affine: Optional[torch.Tensor] = None,
                 blur: bool = True,
-                custom_loss: nn.Module = None, **kwargs) -> None:
+                custom_loss: nn.Module = None) -> None:
         # initialize abstract registration
         # nn.Module.__init__(self)
         super().__init__(scales=scales, iterations=iterations, fixed_images=fixed_images, moving_images=moving_images, 
                          loss_type=loss_type, mi_kernel_type=mi_kernel_type, cc_kernel_type=cc_kernel_type, custom_loss=custom_loss, 
                          loss_params=loss_params,
                          cc_kernel_size=cc_kernel_size, reduction=reduction,
-                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters, **kwargs)
+                         tolerance=tolerance, max_tolerance_iters=max_tolerance_iters)
         self.dims = fixed_images.dims
         self.blur = blur
         self.reduction = reduction
@@ -67,7 +67,7 @@ class GreedyRegistration(AbstractRegistration):
         self.affine = init_affine.detach()
     
     def get_warped_coordinates(self, fixed_images: BatchedImages, moving_images: BatchedImages, shape=None):
-        ''' given fixed and moving images, get warp field (not displacement field) '''
+        ''' given fixed and moving images, get warp '''
         fixed_arrays = fixed_images()
         if shape is None:
             shape = fixed_images.shape
@@ -133,7 +133,7 @@ class GreedyRegistration(AbstractRegistration):
             self.warp.set_size(size_down)
             # Get coordinates to transform
             fixed_image_affinecoords = F.affine_grid(affine_map_init, fixed_image_down.shape, align_corners=True)
-            pbar = tqdm(range(iters)) if self.progress_bar else range(iters)
+            pbar = tqdm(range(iters))
             # reduce 
             if self.reduction == 'mean':
                 scale_factor = 1
@@ -152,8 +152,7 @@ class GreedyRegistration(AbstractRegistration):
                 moved_image = F.grid_sample(moving_image_blur, moved_coords, mode='bilinear', align_corners=True)  # [N, C, H, W, [D]]
                 loss = self.loss_fn(moved_image, fixed_image_down)
                 loss.backward()
-                if self.progress_bar:
-                    pbar.set_description("scale: {}, iter: {}/{}, loss: {:4f}".format(scale, i, iters, loss.item()/scale_factor))
+                pbar.set_description("scale: {}, iter: {}/{}, loss: {:4f}".format(scale, i, iters, loss.item()/scale_factor))
                 # optimize the velocity field
                 self.warp.step()
                 # check for convergence
@@ -169,7 +168,7 @@ class GreedyRegistration(AbstractRegistration):
 
 
 if __name__ == '__main__':
-    from ext.fireants.io.image import Image
+    from fireants.io.image import Image
     img1 = Image.load_file('/data/BRATS2021/training/BraTS2021_00598/BraTS2021_00598_t1.nii.gz')
     img2 = Image.load_file('/data/BRATS2021/training/BraTS2021_00597/BraTS2021_00597_t1.nii.gz')
     fixed = BatchedImages([img1, ])
@@ -178,7 +177,7 @@ if __name__ == '__main__':
     from time import time
 
     ## affine step
-    from ext.fireants.registration.affine import AffineRegistration
+    from fireants.registration.affine import AffineRegistration
     transform = AffineRegistration([8, 4, 2, 1], [200, 100, 50, 20], fixed, moving, \
         loss_type='cc', optimizer='Adam', optimizer_lr=3e-4, optimizer_params={'momentum': 0.9})
     transform.optimize(save_transformed=False)

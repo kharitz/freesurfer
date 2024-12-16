@@ -4,11 +4,11 @@ import time
 import numpy as np
 import torch
 import SimpleITK as sitk
-from ext.fireants.io.image import Image, BatchedImages
-from ext.fireants.registration.affine import AffineRegistration
-from ext.fireants.registration.greedy import GreedyRegistration
-from ext.fireants.registration.syn import SyNRegistration
-from ext.fireants.utils.imageutils import jacobian
+from fireants.io.image import Image, BatchedImages
+from fireants.registration.affine import AffineRegistration
+from fireants.registration.greedy import GreedyRegistration
+from fireants.registration.syn import SyNRegistration
+from fireants.utils.imageutils import jacobian
 from evaluate_metrics import compute_metrics
 from itertools import product
 from functools import partial

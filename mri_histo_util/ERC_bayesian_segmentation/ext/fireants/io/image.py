@@ -3,16 +3,15 @@ import SimpleITK as sitk
 import numpy as np
 from typing import Any, Union, List
 from time import time
-from ext.fireants.types import devicetype
-from ext.fireants.utils.imageutils import integer_to_onehot
+from fireants.types import devicetype
+from fireants.utils.imageutils import integer_to_onehot
 
 class Image:
     '''
     TODO: Documentation here
     '''
     def __init__(self, itk_image: sitk.SimpleITK.Image, device: devicetype = 'cuda',
-            is_segmentation=False, max_seg_label=None, background_seg_label=0, seg_preprocessor=lambda x: x,
-            spacing=None, direction=None, origin=None, center=None) -> None:
+            is_segmentation=False, max_seg_label=None, background_seg_label=0, seg_preprocessor=lambda x: x) -> None:
         self.itk_image = itk_image
         # check for segmentation parameters
         # if `is_segmentation` is False, then just treat this as a float image
@@ -36,19 +35,10 @@ class Image:
         self.dims = dims
         if dims not in [2, 3]:
             raise NotImplementedError("Image class only supports 2D/3D images.")
-        
-        # custom spacing if not provided use simpleitk values
-        spacing = np.array(itk_image.GetSpacing())[None] if spacing is None else np.array(spacing)[None]
-        origin = np.array(itk_image.GetOrigin())[None] if origin is None else np.array(origin)[None]
-        direction = np.array(itk_image.GetDirection()).reshape(dims, dims) if direction is None else np.array(direction).reshape(dims, dims)
-        if center is not None:
-            print("Center location provided, recalibrating origin.")
-            origin = center - np.matmul(direction, ((np.array(itk_image.GetSize())*spacing/2).squeeze())[:, None]).T
-
         px2phy = np.eye(dims+1)
-        px2phy[:dims, -1] = origin
-        px2phy[:dims, :dims] = direction
-        px2phy[:dims, :dims] = px2phy[:dims, :dims] * spacing 
+        px2phy[:dims, -1] = itk_image.GetOrigin()
+        px2phy[:dims, :dims] = np.array(itk_image.GetDirection()).reshape(dims, dims)
+        px2phy[:dims, :dims] = px2phy[:dims, :dims] * np.array(itk_image.GetSpacing())[None]
         # generate mapping from torch to px
         torch2px = np.eye(dims+1)
         scaleterm = (np.array(itk_image.GetSize())-1)*0.5
@@ -66,10 +56,6 @@ class Image:
     def load_file(cls, image_path:str, *args, **kwargs) -> 'Image':
         itk_image = sitk.ReadImage(image_path)
         return cls(itk_image, *args, **kwargs)
-    
-    @property
-    def shape(self):
-        return self.array.shape
 
 
 class BatchedImages:
@@ -91,7 +77,7 @@ class BatchedImages:
         else:
             raise ValueError("All images must have the same shape")
         self.n_images = len(self.images)
-        self.interpolate_mode = 'bilinear' if len(self.images[0].shape) == 4 else 'trilinear'
+        self.interpolate_mode = 'bilinear' if self.images[0] == 2 else 'trilinear'
 
     def __call__(self):
         # get batch of images

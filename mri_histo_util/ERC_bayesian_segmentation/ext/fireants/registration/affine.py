@@ -1,15 +1,15 @@
-from ext.fireants.registration.abstract import AbstractRegistration
+from fireants.registration.abstract import AbstractRegistration
 from typing import List, Optional
 import torch
 from torch import nn
-from ext.fireants.io.image import BatchedImages
+from fireants.io.image import BatchedImages
 from torch.optim import SGD, Adam
 from torch.nn import functional as F
-from ext.fireants.utils.globals import MIN_IMG_SIZE
+from fireants.utils.globals import MIN_IMG_SIZE
 from tqdm import tqdm
 import numpy as np
-from ext.fireants.losses.cc import gaussian_1d, separable_filtering
-from ext.fireants.utils.imageutils import downsample
+from fireants.losses.cc import gaussian_1d, separable_filtering
+from fireants.utils.imageutils import downsample
 
 class AffineRegistration(AbstractRegistration):
     def __init__(self, scales: List[int], iterations: List[float], 
@@ -25,12 +25,12 @@ class AffineRegistration(AbstractRegistration):
                 custom_loss: nn.Module = None,
                 blur: bool = True,
                 moved_mask: bool = False,   # mask out moved image for loss
-                loss_device: Optional[str] = None, **kwargs,
+                loss_device: Optional[str] = None,
                 ) -> None:
 
         super().__init__(scales=scales, iterations=iterations, fixed_images=fixed_images, moving_images=moving_images, 
                          loss_type=loss_type, mi_kernel_type=mi_kernel_type, cc_kernel_type=cc_kernel_type, custom_loss=custom_loss, loss_params=loss_params,
-                         cc_kernel_size=cc_kernel_size, tolerance=tolerance, max_tolerance_iters=max_tolerance_iters, **kwargs)
+                         cc_kernel_size=cc_kernel_size, tolerance=tolerance, max_tolerance_iters=max_tolerance_iters)
         device = self.device
         dims = self.dims
         self.blur = blur
@@ -55,9 +55,8 @@ class AffineRegistration(AbstractRegistration):
     def get_affine_matrix(self):
         return torch.cat([self.affine, self.row], dim=1)
 
-    def optimize(self, save_transformed=False):
+    def optimize(self, save_transformed=False, verbose=True):
         ''' Given fixed and moving images, optimize rigid registration '''
-        verbose = self.progress_bar
         fixed_arrays = self.fixed_images()
         moving_arrays = self.moving_images()
         fixed_t2p = self.fixed_images.get_torch2phy()
@@ -90,7 +89,10 @@ class AffineRegistration(AbstractRegistration):
             fixed_image_coords_homo = torch.einsum('ntd, n...d->n...t', fixed_t2p, fixed_image_coords_homo)  # [N, H, W, [D], dims+1]  
             # print(fixed_image_down.min(), fixed_image_down.max())
             # this is in physical space
-            pbar = tqdm(range(iters)) if verbose else range(iters)
+            if verbose:
+                pbar = tqdm(range(iters))
+            else:
+                pbar = range(iters)
             torch.cuda.empty_cache()
             for i in pbar:
                 self.optimizer.zero_grad()
@@ -110,10 +112,7 @@ class AffineRegistration(AbstractRegistration):
                     if moved_mask is not None:
                         moved_mask = moved_mask.to(self.loss_device)
                 # calculate loss function
-                if moved_mask is None: # added by Eugenio
-                    loss = self.loss_fn(moved_image, fixed_image_down)
-                else:
-                    loss = self.loss_fn(moved_image, fixed_image_down, mask=moved_mask)
+                loss = self.loss_fn(moved_image, fixed_image_down, mask=moved_mask)
                 loss.backward()
                 # print(self.transl.grad, self.rotation.grad)
                 self.optimizer.step()
@@ -132,7 +131,7 @@ class AffineRegistration(AbstractRegistration):
 
 
 if __name__ == '__main__':
-    from ext.fireants.io.image import Image, BatchedImages
+    from fireants.io.image import Image, BatchedImages
     img1 = Image.load_file('/data/BRATS2021/training/BraTS2021_00598/BraTS2021_00598_t2.nii.gz')
     img2 = Image.load_file('/data/BRATS2021/training/BraTS2021_00599/BraTS2021_00599_t2.nii.gz')
     fixed = BatchedImages([img1, ])

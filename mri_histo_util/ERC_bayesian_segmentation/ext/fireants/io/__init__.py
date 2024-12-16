@@ -1,1 +1,1 @@
-from ext.fireants.io.image import Image, BatchedImages
+from fireants.io.image import Image, BatchedImages

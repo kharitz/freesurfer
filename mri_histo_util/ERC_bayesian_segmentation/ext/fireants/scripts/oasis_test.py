@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import SimpleITK as sitk
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
-from ext.fireants.io.image import Image, BatchedImages
-from ext.fireants.registration.affine import AffineRegistration
-from ext.fireants.registration.greedy import GreedyRegistration
-from ext.fireants.registration.syn import SyNRegistration
+from fireants.io.image import Image, BatchedImages
+from fireants.registration.affine import AffineRegistration
+from fireants.registration.greedy import GreedyRegistration
+from fireants.registration.syn import SyNRegistration
 import argparse
 from tqdm import tqdm
 from evaluate_metrics import compute_metrics

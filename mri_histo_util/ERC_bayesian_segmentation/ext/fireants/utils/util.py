@@ -3,7 +3,7 @@ from time import perf_counter
 from contextlib import contextmanager
 import torch
 from torch.nn import functional as F
-from ext.fireants.losses.cc import gaussian_1d, separable_filtering
+from fireants.losses.cc import gaussian_1d, separable_filtering
 from collections import deque
 import numpy as np
 

@@ -1,9 +1,9 @@
 ''' class for SGD for compositive warps '''
 import torch
 from torch.nn import functional as F
-from ext.fireants.utils.imageutils import jacobian as jacobian_fn
-from ext.fireants.utils.imageutils import compute_inverse_warp_displacement
-from ext.fireants.losses.cc import separable_filtering
+from fireants.utils.imageutils import jacobian as jacobian_fn
+from fireants.utils.imageutils import compute_inverse_warp_displacement
+from fireants.losses.cc import separable_filtering
 # import matplotlib.pyplot as plt
 
 class WarpSGD:
