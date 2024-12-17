@@ -61,7 +61,7 @@ scipy==1.10.1
 segment-anything==1.0
 six==1.16.0
 spheremorph@git+https://github.com/silencer1127/spheremorph.git@master
-surfa@git+https://github.com/freesurfer/surfa.git@ded5f1d3d90e223050ab7792ac4760c3242e43c7
+surfa@git+https://github.com/freesurfer/surfa.git@977f6eaa9689f1c2730f206b9ea7e74845b34ff6
 sympy==1.13.1
 tensorboard-data-server==0.7.2
 tensorboard==2.13.0
