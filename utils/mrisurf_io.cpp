@@ -301,7 +301,7 @@ int MRISwriteCurvature(MRI_SURFACE *mris, const char *sname, const char *curv_na
       MRIsetVoxVal(TempMRI, vno, 0, 0, 0, v->curv);
     }
 
-    TempMRI->version = ((MGZ_INTENT_SHAPE & 0xff ) << 8) | MGH_VERSION;
+    TempMRI->version = ((MGZ_INTENT_SHAPE & 0xffff ) << 8) | MGH_VERSION;
     error = MRIwrite(TempMRI, curv_to_write);
     MRIfree(&TempMRI);
   }
@@ -1782,7 +1782,7 @@ int MRISwriteAnnotation(MRI_SURFACE *mris, const char *sname, bool writect)
     if(surfseg == NULL)
       return ERROR_NOFILE;
 
-    surfseg->version = ((MGZ_INTENT_LABEL & 0xff ) << 8) | MGH_VERSION;
+    surfseg->version = ((MGZ_INTENT_LABEL & 0xffff ) << 8) | MGH_VERSION;
     error = MRIwrite(surfseg, annot_to_write);
     MRIfree(&surfseg);
   }

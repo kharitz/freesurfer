@@ -1425,7 +1425,7 @@ void __reportWarp(MRI *mri, const char *fname)
          mri->warpFieldFormat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS ? "DISP_CRS" :
 	 mri->warpFieldFormat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_RAS  ? "ABS_RAS"  :
 	 mri->warpFieldFormat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS ? "DISP_RAS" :
-	 "UNKNOWN", mri->type);
+	 "UNKNOWN", mri->warpFieldFormat);
   printf("       spacing: %d\n", mri->gcamorphSpacing);
   printf("       exp_k  : %.6f\n", mri->gcamorphExp_k);
 

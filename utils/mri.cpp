@@ -572,7 +572,7 @@ MRI *MRIallocHeader(int width, int height, int depth, int type, int nframes)
 
   Note: MRIgetVoxelToRasXform is #defined to be extract_i_to_r().
   ----------------------------------------------------------------*/
-MATRIX *MRIxfmCRS2XYZ(const VOL_GEOM *mri, int base)
+MATRIX *MRIxfmCRS2XYZ(const VOL_GEOM *mri, int base, bool useshear)
 {
   MATRIX *m;
   MATRIX *Pcrs, *PxyzOffset;
@@ -609,6 +609,19 @@ MATRIX *MRIxfmCRS2XYZ(const VOL_GEOM *mri, int base)
   *MATRIX_RELT(m, 4, 4) = 1.0;
 
   /* At this point, m = Mdc * D */
+  if (useshear && (mri->s_r > 1e-5 || mri->s_a > 1e-5 || mri->s_s > 1e-5))
+  {
+    MATRIX *matshear = MatrixIdentity(4, NULL);
+    *MATRIX_RELT(matshear, 1, 2) = (MRIxfmCRS2XYZPrecision)mri->s_r;
+    *MATRIX_RELT(matshear, 1, 3) = (MRIxfmCRS2XYZPrecision)mri->s_a;
+    *MATRIX_RELT(matshear, 2, 3) = (MRIxfmCRS2XYZPrecision)mri->s_s;
+    if (Gdiag & DIAG_INFO)
+    {
+      printf("[DEBUG] MRIxfmCRS2XYZ() matshear:\n");
+      MatrixPrint(stdout, matshear);
+    }
+    m = MatrixMultiplyD(m, matshear, NULL);
+  }
 
   /* Col, Row, Slice at the Center of the Volume */
   Pcrs = MatrixAlloc(4, 1, MATRIX_REAL);

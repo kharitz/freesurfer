@@ -7,9 +7,7 @@ from torch.utils.checkpoint import checkpoint
 from torch import nn
 from torch.nn import functional as F
 from typing import Union, Tuple, List, Optional, Dict, Any, Callable
-#from fireants.types import ItemOrList
-from ext.fireants.types import ItemOrList
-import numpy as np
+from fireants.types import ItemOrList
 
 @torch.jit.script
 def gaussian_1d(
@@ -119,7 +117,6 @@ def _separable_filtering_conv(
 
 @torch.jit.script
 def separable_filtering(x: torch.Tensor, kernels: ItemOrList[torch.Tensor], mode: str = "zeros") -> torch.Tensor:
-# def separable_filtering(x: torch.Tensor, kernels: ItemOrList[torch.Tensor], mode: str = "zeros") -> torch.Tensor:
     """
     Apply 1-D convolutions along each spatial dimension of `x`.
     Args:
@@ -163,7 +160,7 @@ kernel_dict = {
     "gaussian": make_gaussian_kernel,
 }
 
-class HybridDiceLabelDiffloss(nn.Module):
+class LocalNormalizedCrossCorrelationLoss(nn.Module):
     """
     Local squared zero-normalized cross-correlation.
     The loss is based on a moving kernel/window over the y_true/y_pred,
@@ -185,7 +182,6 @@ class HybridDiceLabelDiffloss(nn.Module):
         smooth_dr: float = 1e-5,
         unsigned: bool = True,
         checkpointing: bool = False,
-        rel_weight_labeldiff: float = 1.0,
     ) -> None:
         """
         Args:
@@ -199,16 +195,13 @@ class HybridDiceLabelDiffloss(nn.Module):
                 - ``"sum"``: the output will be summed.
             smooth_nr: a small constant added to the numerator to avoid nan.
             smooth_dr: a small constant added to the denominator to avoid nan.
-            rel_weight_labeldiff: relative weight of Label Difference loss
             split: do we want to split computation across 2 GPUs? (if pred and target are on different GPUs)
                 default: False (assumes they are on same device and big enough to fit on one GPU)
         """
         super().__init__()
         self.ndim = spatial_dims
-        if self.ndim != 3:
-            raise ValueError("Unsupported ndim, only 3-d inputs are supported")
-        if reduction != 'mean':
-            raise ValueError("Unsupported reduction, only mean is supported")
+        if self.ndim not in {1, 2, 3}:
+            raise ValueError(f"Unsupported ndim: {self.ndim}-d, only 1-d, 2-d, and 3-d inputs are supported")
         self.reduction = reduction
         self.unsigned = unsigned
 
@@ -223,7 +216,6 @@ class HybridDiceLabelDiffloss(nn.Module):
         self.kernel_nd, self.kernel_vol = self.get_kernel_vol()   # get nD kernel and its volume
         self.smooth_nr = float(smooth_nr)
         self.smooth_dr = float(smooth_dr)
-        self.rel_weight_labeldiff = rel_weight_labeldiff
         self.checkpointing = checkpointing
 
     def get_kernel_vol(self):
@@ -238,14 +230,12 @@ class HybridDiceLabelDiffloss(nn.Module):
             pred: the shape should be BNH[WD].
             target: the shape should be BNH[WD].
         Raises:
-            ValueError: When ``self.reduction`` is not "mean"".
+            ValueError: When ``self.reduction`` is not one of ["mean", "sum", "none"].
         """
-        if pred.ndim - 2 != 3:
-            raise ValueError(f"expecting pred with 3 spatial dimensions, got pred of shape {pred.shape}")
+        if pred.ndim - 2 != self.ndim:
+            raise ValueError(f"expecting pred with {self.ndim} spatial dimensions, got pred of shape {pred.shape}")
         if target.shape != pred.shape:
             raise ValueError(f"ground truth has differing shape ({target.shape}) from pred ({pred.shape})")
-        if mask is not None:
-            raise ValueError('Mask should always be None')
 
         # sum over kernel
         def cc_checkpoint_fn(target, pred, kernel, kernel_vol):
@@ -290,21 +280,44 @@ class HybridDiceLabelDiffloss(nn.Module):
             return ncc
         
         if self.checkpointing:
-            ncc = checkpoint(cc_checkpoint_fn, target[:,0:1,:,:,:], pred[:,0:1,:,:,:], self.kernel, self.kernel_vol)
+            ncc = checkpoint(cc_checkpoint_fn, target, pred, self.kernel, self.kernel_vol)
         else:
-            ncc = cc_checkpoint_fn(target[:,0:1,:,:,:], pred[:,0:1,:,:,:], self.kernel, self.kernel_vol)
+            ncc = cc_checkpoint_fn(target, pred, self.kernel, self.kernel_vol)
 
-        lnccloss = (1.0 - torch.mean(ncc))
+        if mask is not None:
+            maskmean = mask.flatten(2).mean(2)  # [B, N]
+            for _ in range(self.ndim):
+                maskmean = maskmean.unsqueeze(-1)  # [B, N, 1, 1, ...]
+            ncc = ncc * mask / maskmean
 
-        diff = torch.abs(target[:, 1:target.shape[1], :, :, :] - pred[:, 1:target.shape[1], :, :, :])
-        labeldiffloss = 0.5 * diff.sum(dim=1).mean([1,2,3])
-
-        loss = lnccloss  + labeldiffloss * self.rel_weight_labeldiff
-
-        return (loss/(1.0 + self.rel_weight_labeldiff))
-
-
-
+        if self.reduction == 'sum':
+            return torch.sum(ncc).neg()  # sum over the batch, channel and spatial ndims
+        if self.reduction == 'none':
+            return ncc.neg()
+        if self.reduction == 'mean':
+            return torch.mean(ncc).neg()  # average over the batch, channel and spatial ndims
+        raise ValueError(f'Unsupported reduction: {self.reduction}, available options are ["mean", "sum", "none"].')
 
 
-
+if __name__ == '__main__':
+    N = 64  
+    img1 = torch.rand(1, 1, N, N, N).cuda()
+    img2 = torch.rand(1, 1, N, N, N).cuda()
+    # loss = torch.jit.script(LocalNormalizedCrossCorrelationLoss(3, kernel_type='rectangular', reduction='mean')).cuda()
+    loss = LocalNormalizedCrossCorrelationLoss(3, kernel_type='rectangular', reduction='mean').cuda()
+    total = 0
+    @torch.jit.script
+    def train(img1: torch.Tensor, img2: torch.Tensor, n: int) -> float:
+        total = 0.0
+        for i in range(n):
+            out = loss(img1, img2)
+            total += out.item()
+        return total
+    
+    a = time()
+    # total = train(img1, img2, 200)
+    for i in range(200):
+        out = loss(img1, img2)
+        total += out.item()
+    print(time() - a)
+    print(total / 200)
