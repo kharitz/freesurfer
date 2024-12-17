@@ -53,7 +53,7 @@ test_command mri_warp_convert --inm3z ref.m3z --outmgzwarp out.m3z.mgz --outwarp
 compare_vol out.m3z.mgz ref.m3z.mgz
 if [[ "$host_os" == "macos10" ]] || [[ "$host_os" == "macos12" ]]; then
    TESTDATA_SUFFIX=".macos"
-   compare_vol out.m3z.mgz ref.m3z.mgz${TESTDATA_SUFFIX}
+   compare_vol out.m3z.mgz ref.m3z${TESTDATA_SUFFIX}.mgz
 else
    compare_vol out.m3z.mgz ref.m3z.mgz
 fi
