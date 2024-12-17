@@ -62,6 +62,12 @@ t -t out.nii.gz moving.mgz fixed.mgz
 test_command $mri_convert -odt float -at out.nii.gz moving.mgz out.mgz
 compare_vol out.mgz joint.mgz --thresh 1
 
+# displacements in RAS space
+mri_warp_convert=$(find_path $FSTEST_CWD mri_warp_convert/mri_warp_convert)
+test_command $mri_warp_convert -g moving.mgz --inras out.nii.gz --outmgzwarp out.mgz
+test_command $mri_convert -odt float -at out.mgz moving.mgz moved.mgz
+compare_vol moved.mgz joint.mgz --thresh 1
+
 # illegal arguments
 EXPECT_FAILURE=1
 t moving.mgz fixed.mgz -m banana
