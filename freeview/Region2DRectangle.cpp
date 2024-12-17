@@ -35,7 +35,7 @@
 #include <QDebug>
 
 Region2DRectangle::Region2DRectangle( RenderView2D* view ) :
-  Region2D( view )
+  Region2D( view ), m_nX1(0), m_nY1(0), m_nX2(0), m_nY2(0)
 {
   m_bEnableStats = true;
 

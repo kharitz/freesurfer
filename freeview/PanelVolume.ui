@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>414</width>
-     <height>1931</height>
+     <height>1970</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -548,39 +548,32 @@ of each frame</string>
       </item>
       <item row="26" column="1">
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="0" colspan="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_22">
-          <item>
-           <widget class="QCheckBox" name="checkBoxAutoSetMid">
-            <property name="text">
-             <string>Autoset Mid</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="checkBoxSetMidToMin">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>Set Mid to Min</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_8">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>2</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
+        <item row="1" column="2">
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="5" column="0" colspan="2">
+         <widget class="QCheckBox" name="checkBoxClearBackground">
+          <property name="text">
+           <string>Clear background</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QCheckBox" name="checkBoxOffsetToMean">
+          <property name="text">
+           <string>Set offset to mean</string>
+          </property>
+         </widget>
         </item>
         <item row="5" column="2">
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -618,10 +611,44 @@ of each frame</string>
           </item>
          </layout>
         </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QCheckBox" name="checkBoxClearBackground">
+        <item row="2" column="0" colspan="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_22">
+          <item>
+           <widget class="QCheckBox" name="checkBoxAutoSetMid">
+            <property name="text">
+             <string>Autoset Mid</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBoxSetMidToMin">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Set Mid to Min</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_8">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>2</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QCheckBox" name="checkBoxPercentile">
           <property name="text">
-           <string>Clear background</string>
+           <string>Use percentile</string>
           </property>
          </widget>
         </item>
@@ -632,34 +659,7 @@ of each frame</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="0" colspan="2">
-         <widget class="QCheckBox" name="checkBoxPercentile">
-          <property name="text">
-           <string>Use percentile</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QCheckBox" name="checkBoxTruncate">
-          <property name="text">
-           <string>Truncate</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="6" column="0">
+        <item row="7" column="0">
          <widget class="QPushButton" name="pushButtonResetWindowLevel">
           <property name="text">
            <string>Reset</string>
@@ -673,10 +673,18 @@ of each frame</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
-         <widget class="QCheckBox" name="checkBoxOffsetToMean">
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="checkBoxTruncate">
           <property name="text">
-           <string>Set offset to mean</string>
+           <string>Truncate</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0" colspan="2">
+         <widget class="QCheckBox" name="checkBoxAutoWindowSlice">
+          <property name="text">
+           <string>Auto windowing when 
+changing slices</string>
           </property>
          </widget>
         </item>
@@ -1776,8 +1784,8 @@ of each frame</string>
    <slot>OnCheckShowContour(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>147</x>
-     <y>1558</y>
+     <x>146</x>
+     <y>1590</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -1825,7 +1833,7 @@ of each frame</string>
    <hints>
     <hint type="sourcelabel">
      <x>156</x>
-     <y>1131</y>
+     <y>1186</y>
     </hint>
     <hint type="destinationlabel">
      <x>37</x>
@@ -2064,8 +2072,8 @@ of each frame</string>
    <slot>OnSliderContourMin(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1633</y>
+     <x>326</x>
+     <y>1690</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2080,8 +2088,8 @@ of each frame</string>
    <slot>OnSliderContourMax(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1670</y>
+     <x>326</x>
+     <y>1727</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2096,8 +2104,8 @@ of each frame</string>
    <slot>OnSliderContourSmooth(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1776</y>
+     <x>326</x>
+     <y>1833</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2112,8 +2120,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1633</y>
+     <x>326</x>
+     <y>1690</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2128,8 +2136,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1670</y>
+     <x>326</x>
+     <y>1727</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2144,8 +2152,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>1776</y>
+     <x>326</x>
+     <y>1833</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2160,8 +2168,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>340</x>
-     <y>1631</y>
+     <x>394</x>
+     <y>1688</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2176,8 +2184,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>340</x>
-     <y>1668</y>
+     <x>394</x>
+     <y>1725</y>
     </hint>
     <hint type="destinationlabel">
      <x>288</x>
@@ -2192,8 +2200,8 @@ of each frame</string>
    <slot>OnContourValueChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>340</x>
-     <y>1774</y>
+     <x>394</x>
+     <y>1831</y>
     </hint>
     <hint type="destinationlabel">
      <x>68</x>
@@ -2256,8 +2264,8 @@ of each frame</string>
    <slot>OnSliderTrackVolumeMin(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>280</x>
-     <y>1426</y>
+     <x>334</x>
+     <y>1458</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2272,8 +2280,8 @@ of each frame</string>
    <slot>OnTrackVolumeThresholdChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>348</x>
-     <y>1424</y>
+     <x>402</x>
+     <y>1456</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2288,8 +2296,8 @@ of each frame</string>
    <slot>OnTrackVolumeThresholdChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>280</x>
-     <y>1426</y>
+     <x>334</x>
+     <y>1458</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2320,8 +2328,8 @@ of each frame</string>
    <slot>OnShowExistingLabelsOnly(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>350</x>
-     <y>1145</y>
+     <x>404</x>
+     <y>1207</y>
     </hint>
     <hint type="destinationlabel">
      <x>325</x>
@@ -2336,8 +2344,8 @@ of each frame</string>
    <slot>OnCheckShowLabelContour(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>229</x>
-     <y>1594</y>
+     <x>259</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
      <x>0</x>
@@ -2417,7 +2425,7 @@ of each frame</string>
    <hints>
     <hint type="sourcelabel">
      <x>194</x>
-     <y>1001</y>
+     <y>998</y>
     </hint>
     <hint type="destinationlabel">
      <x>23</x>
@@ -2433,7 +2441,7 @@ of each frame</string>
    <hints>
     <hint type="sourcelabel">
      <x>194</x>
-     <y>1001</y>
+     <y>998</y>
     </hint>
     <hint type="destinationlabel">
      <x>257</x>
@@ -2449,7 +2457,7 @@ of each frame</string>
    <hints>
     <hint type="sourcelabel">
      <x>194</x>
-     <y>1001</y>
+     <y>998</y>
     </hint>
     <hint type="destinationlabel">
      <x>340</x>
@@ -2480,8 +2488,8 @@ of each frame</string>
    <slot>OnCheckBoxSelectAllLabels(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>15</x>
-     <y>1145</y>
+     <x>14</x>
+     <y>1207</y>
     </hint>
     <hint type="destinationlabel">
      <x>340</x>
@@ -2544,8 +2552,8 @@ of each frame</string>
    <slot>OnCheckVoxelizedContour(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>341</x>
-     <y>1594</y>
+     <x>395</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
      <x>340</x>
@@ -2560,12 +2568,12 @@ of each frame</string>
    <slot>setHidden(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>341</x>
-     <y>1594</y>
+     <x>395</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
      <x>74</x>
-     <y>1777</y>
+     <y>1834</y>
     </hint>
    </hints>
   </connection>
@@ -2576,12 +2584,12 @@ of each frame</string>
    <slot>setHidden(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>341</x>
-     <y>1594</y>
+     <x>395</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
-     <x>272</x>
-     <y>1776</y>
+     <x>326</x>
+     <y>1833</y>
     </hint>
    </hints>
   </connection>
@@ -2592,12 +2600,12 @@ of each frame</string>
    <slot>setHidden(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>341</x>
-     <y>1594</y>
+     <x>395</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
-     <x>340</x>
-     <y>1774</y>
+     <x>394</x>
+     <y>1831</y>
     </hint>
    </hints>
   </connection>
@@ -2640,12 +2648,12 @@ of each frame</string>
    <slot>setHidden(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>341</x>
-     <y>1597</y>
+     <x>395</x>
+     <y>1654</y>
     </hint>
     <hint type="destinationlabel">
-     <x>350</x>
-     <y>1744</y>
+     <x>404</x>
+     <y>1801</y>
     </hint>
    </hints>
   </connection>
@@ -2656,8 +2664,8 @@ of each frame</string>
    <slot>OnButtonContourUpdate()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>1554</y>
+     <x>403</x>
+     <y>1598</y>
     </hint>
     <hint type="destinationlabel">
      <x>648</x>

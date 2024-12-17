@@ -133,7 +133,8 @@ PanelVolume::PanelVolume(QWidget *parent) :
                               << ui->labelMin
                               << ui->labelMax
                               << ui->checkBoxPercentile
-                              << ui->pushButtonResetWindowLevel;
+                              << ui->pushButtonResetWindowLevel
+                              << ui->checkBoxAutoWindowSlice;
 
   m_widgetlistLUT << ui->treeWidgetColorTable
                   << ui->labelLookUpTable
@@ -326,6 +327,7 @@ void PanelVolume::ConnectLayer( Layer* layer_in )
   connect( ui->pushButtonResetWindowLevel, SIGNAL(clicked(bool)), SLOT(OnButtonResetWindowLevel()));
   connect( ui->spinBoxVectorSkip, SIGNAL(valueChanged(int)), p, SLOT(SetVectorSkip(int)));
   connect( p, SIGNAL(AutoAdjustFrameContrastChanged(bool)), SLOT(OnAutoAdjustFrameContrastChanged(bool)), Qt::QueuedConnection);
+  connect( ui->checkBoxAutoWindowSlice, SIGNAL(toggled(bool)), p, SLOT(SetAutoWindowSlice(bool)));
 
   ui->colorLabelBrushValue->installEventFilter(this);
 }
@@ -476,6 +478,7 @@ void PanelVolume::DoUpdateWidgets()
     ui->checkBoxAutoSetMid->setChecked( layer->GetProperty()->GetHeatScaleAutoMid());
     ui->checkBoxSetMidToMin->setChecked( layer->GetProperty()->GetHeatScaleSetMidToMin());
 //    ui->checkBoxSetMidToMin->setEnabled(ui->checkBoxAutoSetMid->isChecked());
+    ui->checkBoxAutoWindowSlice->setChecked( layer->GetProperty()->GetAutoWindowSlice());
 
     ui->comboBoxColorMap->clear();
     ui->comboBoxColorMap->addItem( "Grayscale", LayerPropertyMRI::Grayscale );

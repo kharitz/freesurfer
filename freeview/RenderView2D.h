@@ -167,6 +167,7 @@ protected slots:
 protected:
   virtual void resizeEvent(QResizeEvent *event);
   bool EnsureCursor2DVisible();
+  QList<Layer*> GetSelectWindowAdjustableLayers();
 
 private:
   int m_nViewPlane;

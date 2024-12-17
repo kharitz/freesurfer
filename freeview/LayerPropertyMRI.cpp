@@ -100,6 +100,7 @@ LayerPropertyMRI::LayerPropertyMRI (QObject* parent) : LayerProperty( parent ),
   m_dVectorLineWidth(1),
   m_nVectorSkip(0),
   m_dVectorNormThreshold(0),
+  m_bAutoWindowSlice(false),
   m_colorBinary(Qt::white)
 {
   mGrayScaleTable = vtkSmartPointer<vtkRGBAColorTransferFunction>::New();
@@ -1931,6 +1932,15 @@ void LayerPropertyMRI::SetAutoAdjustFrameLevel(bool b)
       UpdateMinMaxValues();
     this->OnColorMapChanged();
     emit AutoAdjustFrameContrastChanged(b);
+  }
+}
+
+void LayerPropertyMRI::SetAutoWindowSlice(bool b)
+{
+  if (m_bAutoWindowSlice != b)
+  {
+    m_bAutoWindowSlice = b;
+    emit AutoWindowSliceChanged(b);
   }
 }
 
