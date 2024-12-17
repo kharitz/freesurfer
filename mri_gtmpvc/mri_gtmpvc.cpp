@@ -961,11 +961,11 @@ int main(int argc, char *argv[])
     fclose(fp);
   }
 
-
   printf("Writing GTM beta estimates to %s\n",OutBetaFile);
   mritmp = MRIallocSequence(gtm->nsegs, 1, 1, MRI_FLOAT, gtm->yvol->nframes);
   MRIcopyHeader(gtm->yvol,mritmp);
   MRIcopyPulseParameters(gtm->yvol,mritmp);
+  mritmp->ct = CTABdeepCopy(gtm->ctGTMSeg);
   
   for(c=0; c < gtm->nsegs; c++){
     for(f=0; f < gtm->yvol->nframes; f++)
