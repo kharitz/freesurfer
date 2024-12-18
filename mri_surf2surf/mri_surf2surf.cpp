@@ -435,6 +435,7 @@ double fwhm_Input=0, gstd_Input=0;
 int nSmoothSteps_Input = 0;
 int usediff = 0;
 char *LabelFile=NULL, *LabelFile_Input=NULL; // for masking smoothing
+int LabelInvert=0;
 
 int debug = 0;
 char *SrcDumpFile  = NULL;
@@ -876,6 +877,13 @@ int main(int argc, char **argv)
     MaskLabel = LabelRead(srcsubject, LabelFile_Input);
     if(MaskLabel == NULL) exit(1);
     inmask = MRISlabel2Mask(SrcSurfReg, MaskLabel, NULL);
+    if(LabelInvert){
+      printf("Inverting label\n");
+      for(int vno=0; vno < inmask->width; vno++){
+	int m = MRIgetVoxVal(inmask,vno,0,0,0);
+	MRIsetVoxVal(inmask,vno,0,0,0,!m);
+      }
+    }
   } 
   else inmask = NULL;
 
@@ -1604,13 +1612,16 @@ static int parse_commandline(int argc, char **argv)
       }
       LabelFile = pargv[0];
       nargsused = 1;
-    } else if (!strcmp(option, "--label-src")) {
+    } 
+    else if (!strcmp(option, "--label-src")) {
       if (nargc < 1) {
         argnerr(option,1);
       }
       LabelFile_Input = pargv[0];
       nargsused = 1;
-    } else if (!strcmp(option, "--cortex")) {
+    } 
+    else if (!strcmp(option, "--label-invert")) LabelInvert = 1;
+    else if (!strcmp(option, "--cortex")) {
       UseCortexLabel = 1;
     } else if (!strcmp(option, "--no-cortex")) {
       UseCortexLabel = 0;
@@ -1871,6 +1882,7 @@ static void print_usage(void)
   printf("   --cortex : use ?h.cortex.label as a smoothing mask\n");
   printf("   --no-cortex : do NOT use ?h.cortex.label as a smoothing mask (default)\n");
   printf("   --label-src label : source smoothing mask\n");
+  printf("   --label-invert  : invert source smoothing label\n");
   printf("   --label-trg label : target smoothing mask\n");
 
   printf("     --mul Mul : Multiply the input by the given value\n");
