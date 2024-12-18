@@ -41,6 +41,7 @@
 Warpfield::Warpfield()
 {
   __warpmap = NULL;  __warpmap_inv = NULL;
+  __freewarpmap = true;
   __invert = 0;
   __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
 
@@ -51,13 +52,35 @@ Warpfield::Warpfield()
 }
 
 
+// constructor
+Warpfield::Warpfield(MRI* mri)
+{
+  if (mri->intent != MGZ_INTENT_WARPMAP)
+  {
+    printf("[ERROR] Can't create Warpfield object with non MGZ_INTENT_WARPMAP MRI\n");
+    exit(1);
+  }
+  
+  __warpmap = mri;  __warpmap_inv = NULL;
+  __freewarpmap = false;
+  __invert = 0;
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
+
+  // pre-calulated transform matrix taking shears into consideration
+  __srcRAS2Vox = __warpmap->gcamorph_image_vg.get_RAS2Vox(0, true);
+  __srcVox2RAS = __warpmap->gcamorph_image_vg.get_Vox2RAS(0, true);
+  __dstRAS2Vox = __warpmap->gcamorph_atlas_vg.get_RAS2Vox(0, true);
+  __dstVox2RAS = __warpmap->gcamorph_atlas_vg.get_Vox2RAS(0, true);  
+}
+
+
 // destructor
 Warpfield::~Warpfield()
 {
-  if (__warpmap != NULL)
+  if (__freewarpmap && __warpmap != NULL)
     MRIfree(&__warpmap);
 
-  if (__warpmap_inv != NULL)
+  if (__freewarpmap && __warpmap_inv != NULL)
     MRIfree(&__warpmap_inv);
 
   if (__srcRAS2Vox != NULL)
@@ -129,6 +152,7 @@ MRI* Warpfield::convert(GCA_MORPH *gcam, const int dataformat, int doGCAMsampleM
 
   // TAG_GCAMORPH_META
   __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
+  __warpmap->intent  = MGZ_INTENT_WARPMAP;
   __warpmap->version = __mgzVersion;
   __warpmap->warpFieldFormat = dataformat;
   __warpmap->gcamorphSpacing = gcam->spacing;
@@ -265,6 +289,7 @@ MRI* Warpfield::invert(GCA_MORPH *gcam, const int dataformat)
   __warpmap = new MRI(gcam->image, MRI_FLOAT, 4, 0);
 
   __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xffff ) << 8) | MGH_VERSION;
+  __warpmap->intent  = MGZ_INTENT_WARPMAP_INV;
   __warpmap->version = __mgzVersion;
   __warpmap->warpFieldFormat = dataformat;
   __warpmap->gcamorphSpacing = gcam->spacing;
@@ -532,7 +557,8 @@ int Warpfield::write(const char *fname)
     printf("[ERROR] Warpfield::write(): %s is not in mgz/nii format\n", fname);
     exit(1);
   }
-  
+
+  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
   if (__invert)
     __mgzVersion = ((MGZ_INTENT_WARPMAP_INV & 0xffff ) << 8) | MGH_VERSION;
 
@@ -541,53 +567,6 @@ int Warpfield::write(const char *fname)
     printf("ERROR: Warpfield::write(%s)\n", fname);
   
   return ret;
-}
-
-
-// create mgz warp with given dimensions, src/dst VOL_GEOM, dataformat
-void Warpfield::create(int width, int height, int depth, const VOL_GEOM& srcVG, const VOL_GEOM& dstVG,
-		       int spacing, double exp_k, const MATRIX *affine, const int dataformat)
-{
-  if (dataformat == WarpfieldDTFMT::WARPFIELD_DTFMT_UNKNOWN)
-  {
-    printf("[ERROR] Warpfield::create(): unknown dataformat\n");
-    exit(1);
-  }
-  
-  printf("[INFO] Warpfield::create(): [%d x %d x %d]\n", width, height, depth);
-  printf("[INFO] Warpfield::create(): image [%d x %d x %d]\n", srcVG.width, srcVG.height, srcVG.depth);
-  printf("[INFO] Warpfield::create(): atlas [%d x %d x %d]\n", dstVG.width, dstVG.height, dstVG.depth);  
-
-  // create MRI using given dimensions
-  // copy dstVG to __warpmap (width, height, deph are not copied)
-  // srcVg and dstVG will be saved in mgz under TAG_GCAMORPH_GEOM
-  __warpmap = new MRI({width, height, depth, 4}, MRI_FLOAT);
-  MRIcopyVolGeomToMRI(__warpmap, &dstVG);
-
-  // TAG_GCAMORPH_META
-  __mgzVersion = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
-  __warpmap->version = __mgzVersion;
-  __warpmap->warpFieldFormat = dataformat;
-  __warpmap->gcamorphSpacing = spacing;
-  __warpmap->gcamorphExp_k   = exp_k;
-
-  __warpmap->gcamorph_image_vg = srcVG;
-  __warpmap->gcamorph_atlas_vg = dstVG;
-
-  if (affine)
-  {
-    printf("[DEBUG] Warpfield::create() affine (spacing=%d, exp-k=%.2f):\n", spacing, exp_k);
-    MatrixPrint(stdout, affine);
-    __warpmap->gcamorphAffine = MatrixCopy(affine, NULL);
-    printf("[DEBUG] Warpfield::create() __warpmap->gcamorphAffine (spacing=%d, exp-k=%.2f)\n", __warpmap->gcamorphSpacing, __warpmap->gcamorphExp_k);
-    MatrixPrint(stdout, __warpmap->gcamorphAffine);    
-  }  
-  
-  // pre-calulated transform matrix
-  __srcRAS2Vox = __warpmap->gcamorph_image_vg.get_RAS2Vox();
-  __srcVox2RAS = __warpmap->gcamorph_image_vg.get_Vox2RAS();
-  __dstRAS2Vox = __warpmap->gcamorph_atlas_vg.get_RAS2Vox();
-  __dstVox2RAS = __warpmap->gcamorph_atlas_vg.get_Vox2RAS();
 }
 
 
@@ -658,6 +637,302 @@ void Warpfield::setWarp(int c, int r, int s, float fcs, float frs, float fss, in
   MatrixFree(&image_RAS);
   MatrixFree(&atlas_CRS0);
   MatrixFree(&atlas_RAS0);  
+}
+
+
+// change the warp field format to the given type
+void Warpfield::changeFormat(const int newformat)
+{
+  int format = __warpmap->warpFieldFormat;
+  __warpmap->warpFieldFormat = newformat;
+  
+  if (format == newformat)
+    return;
+
+  if (format == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS)
+    __changeFormatFrom_abs_crs(newformat);
+  else if (format == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS)
+    __changeFormatFrom_disp_crs(newformat);
+  else if (format == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_RAS)
+    __changeFormatFrom_abs_ras(newformat);
+  else if (format == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
+    __changeFormatFrom_disp_ras(newformat);
+}
+
+
+void Warpfield::__changeFormatFrom_abs_crs(const int newformat)
+{
+  // pre-allocated MATRIX
+  MATRIX *image_CRS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *image_RAS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *atlas_CRS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *atlas_RAS = MatrixAlloc(4, 1, MATRIX_REAL);
+  
+  for (int c = 0; c < __warpmap->width; c++)
+  {
+    for (int r = 0; r < __warpmap->height; r++)
+    {
+      for (int s = 0; s < __warpmap->depth; s++)
+      {
+	// abs_crs (image_crs)
+	image_CRS->rptr[1][1] = MRIgetVoxVal(__warpmap, c, r, s, 0);
+        image_CRS->rptr[2][1] = MRIgetVoxVal(__warpmap, c, r, s, 1);
+        image_CRS->rptr[3][1] = MRIgetVoxVal(__warpmap, c, r, s, 2);
+        image_CRS->rptr[4][1] = 1;	
+
+	// atlas_crs
+	atlas_CRS->rptr[1][1] = c;
+	atlas_CRS->rptr[2][1] = r;
+	atlas_CRS->rptr[3][1] = s;
+	atlas_CRS->rptr[4][1] = 1;
+	if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS)
+	{
+	  // abs_crs => disp_crs
+	  MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1] - atlas_CRS->rptr[1][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1] - atlas_CRS->rptr[2][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1] - atlas_CRS->rptr[3][1]);
+	}
+	else
+	{
+	    // abs_crs => abs_ras (image_ras) 
+            MatrixMultiplyD(__srcVox2RAS, image_CRS, image_RAS);
+	    if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_RAS)
+	    {
+	      // abs_ras (image_ras)
+	      MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1]);
+	      MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1]);
+	      MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1]);
+	    }
+	    else if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
+	    {
+	      // atlas_ras
+	      MatrixMultiplyD(__dstVox2RAS, atlas_CRS, atlas_RAS);
+
+	      // abs_ras => disp_ras	      
+	      MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1] - atlas_RAS->rptr[1][1]);
+	      MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1] - atlas_RAS->rptr[2][1]);
+	      MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1] - atlas_RAS->rptr[3][1]);
+	    }
+	}
+      }
+    }
+  }
+  
+  MatrixFree(&image_CRS);
+  MatrixFree(&image_RAS);
+  MatrixFree(&atlas_CRS);
+  MatrixFree(&atlas_RAS);
+}
+
+
+void Warpfield::__changeFormatFrom_disp_crs(const int newformat)
+{
+  // pre-allocated MATRIX
+  MATRIX *delta_CRS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *image_CRS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *image_RAS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *atlas_CRS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *atlas_RAS = MatrixAlloc(4, 1, MATRIX_REAL);
+  
+  for (int c = 0; c < __warpmap->width; c++)
+  {
+    for (int r = 0; r < __warpmap->height; r++)
+    {
+      for (int s = 0; s < __warpmap->depth; s++)
+      {
+	// disp_crs
+	delta_CRS->rptr[1][1] = MRIgetVoxVal(__warpmap, c, r, s, 0);
+	delta_CRS->rptr[2][1] = MRIgetVoxVal(__warpmap, c, r, s, 1);
+	delta_CRS->rptr[3][1] = MRIgetVoxVal(__warpmap, c, r, s, 2);
+	delta_CRS->rptr[4][1] = 1;
+
+	// atlas_crs
+	atlas_CRS->rptr[1][1] = c;
+	atlas_CRS->rptr[2][1] = r;
+	atlas_CRS->rptr[3][1] = s;
+	atlas_CRS->rptr[4][1] = 1;
+	
+	// disp_crs => abs_crs (image_crs)	
+	image_CRS->rptr[1][1] = delta_CRS->rptr[1][1] + atlas_CRS->rptr[1][1];
+        image_CRS->rptr[2][1] = delta_CRS->rptr[2][1] + atlas_CRS->rptr[2][1];
+        image_CRS->rptr[3][1] = delta_CRS->rptr[3][1] + atlas_CRS->rptr[3][1];
+        image_CRS->rptr[4][1] = 1;
+	if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS)
+	{
+	  // abs_crs (image_crs)
+	  MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1]);	  
+	}
+	else
+	{
+	  // abs_crs => abs_ras (image_ras)
+	  MatrixMultiplyD(__srcVox2RAS, image_CRS, image_RAS);
+	  if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_RAS)
+	  {
+	    // abs_ras (image_ras)
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1]);
+	  }
+	  else if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
+	  {
+	    // atlas_ras
+	    MatrixMultiplyD(__dstVox2RAS, atlas_CRS, atlas_RAS);
+	    
+	    // abs_ras => disp_ras	    
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1] - atlas_RAS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1] - atlas_RAS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1] - atlas_RAS->rptr[3][1]);
+	  }
+	}
+      }
+    }
+  }
+
+  MatrixFree(&delta_CRS);
+  MatrixFree(&image_CRS);
+  MatrixFree(&image_RAS);
+  MatrixFree(&atlas_CRS);
+  MatrixFree(&atlas_RAS);  
+}
+
+
+void Warpfield::__changeFormatFrom_abs_ras(const int newformat)
+{
+  // pre-allocated MATRIX
+  MATRIX *image_CRS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *image_RAS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *atlas_CRS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *atlas_RAS = MatrixAlloc(4, 1, MATRIX_REAL);
+  
+  for (int c = 0; c < __warpmap->width; c++)
+  {
+    for (int r = 0; r < __warpmap->height; r++)
+    {
+      for (int s = 0; s < __warpmap->depth; s++)
+      {
+	// abs_ras (image_ras)
+	image_RAS->rptr[1][1] = MRIgetVoxVal(__warpmap, c, r, s, 0);
+	image_RAS->rptr[2][1] = MRIgetVoxVal(__warpmap, c, r, s, 1);
+	image_RAS->rptr[3][1] = MRIgetVoxVal(__warpmap, c, r, s, 2);
+	image_RAS->rptr[4][1] = 1;
+
+	// atlas_crs
+	atlas_CRS->rptr[1][1] = c;
+	atlas_CRS->rptr[2][1] = r;
+	atlas_CRS->rptr[3][1] = s;
+	atlas_CRS->rptr[4][1] = 1;	
+	if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
+	{
+	  // atlas_ras
+	  MatrixMultiplyD(__dstVox2RAS, atlas_CRS, atlas_RAS);
+	  
+	  // abs_ras => disp_ras
+	  MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1] - atlas_RAS->rptr[1][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1] - atlas_RAS->rptr[2][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1] - atlas_RAS->rptr[3][1]);
+	}
+	else
+	{
+	  // abs_ras => abs_crs (image_crs)
+	  MatrixMultiplyD(__srcRAS2Vox, image_RAS, image_CRS);
+	  if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS)
+	  {
+	    // abs_crs (image_crs)
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1]);	    
+	  }
+	  else if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS)
+	  {
+	    // abs_crs => disp_crs
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1] - atlas_CRS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1] - atlas_CRS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1] - atlas_CRS->rptr[3][1]);	    
+	  }
+	}
+      }
+    }
+  }
+
+  MatrixFree(&image_CRS);
+  MatrixFree(&image_RAS);
+  MatrixFree(&atlas_CRS);
+  MatrixFree(&atlas_RAS);
+}
+
+
+void Warpfield::__changeFormatFrom_disp_ras(const int newformat)
+{ 
+  // pre-allocated MATRIX
+  MATRIX *delta_RAS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *image_CRS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *image_RAS = MatrixAlloc(4, 1, MATRIX_REAL); 
+  MATRIX *atlas_CRS = MatrixAlloc(4, 1, MATRIX_REAL);  
+  MATRIX *atlas_RAS = MatrixAlloc(4, 1, MATRIX_REAL);
+
+  for (int c = 0; c < __warpmap->width; c++)
+  {
+    for (int r = 0; r < __warpmap->height; r++)
+    {
+      for (int s = 0; s < __warpmap->depth; s++)
+      {
+	// disp_ras
+	delta_RAS->rptr[1][1] = MRIgetVoxVal(__warpmap, c, r, s, 0);
+	delta_RAS->rptr[2][1] = MRIgetVoxVal(__warpmap, c, r, s, 1);
+	delta_RAS->rptr[3][1] = MRIgetVoxVal(__warpmap, c, r, s, 2);
+	delta_RAS->rptr[4][1] = 1;
+
+	// atlas_crs
+	atlas_CRS->rptr[1][1] = c;
+	atlas_CRS->rptr[2][1] = r;
+	atlas_CRS->rptr[3][1] = s;
+	atlas_CRS->rptr[4][1] = 1;
+
+	// atlas_ras
+	MatrixMultiplyD(__dstVox2RAS, atlas_CRS, atlas_RAS);
+
+	// image_ras (abs_ras)
+	image_RAS->rptr[1][1] = delta_RAS->rptr[1][1] + atlas_RAS->rptr[1][1];
+	image_RAS->rptr[2][1] = delta_RAS->rptr[2][1] + atlas_RAS->rptr[2][1];
+	image_RAS->rptr[3][1] = delta_RAS->rptr[3][1] + atlas_RAS->rptr[3][1];
+	image_RAS->rptr[4][1] = 1;	
+	if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_RAS)
+	{
+	  // abs_ras
+	  MRIsetVoxVal(__warpmap, c, r, s, 0, image_RAS->rptr[1][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 1, image_RAS->rptr[2][1]);
+	  MRIsetVoxVal(__warpmap, c, r, s, 2, image_RAS->rptr[3][1]);
+	}
+	else
+	{
+	  // abs_ras => abs_crs (image_crs)
+	  MatrixMultiplyD(__srcRAS2Vox, image_RAS, image_CRS);
+	  if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS)
+	  {
+	    // abs_crs (image_crs)
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1]);	    
+	  }
+	  else if (newformat == WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS)
+	  {
+	    // abs_crs => disp_crs
+	    MRIsetVoxVal(__warpmap, c, r, s, 0, image_CRS->rptr[1][1] - atlas_CRS->rptr[1][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 1, image_CRS->rptr[2][1] - atlas_CRS->rptr[2][1]);
+	    MRIsetVoxVal(__warpmap, c, r, s, 2, image_CRS->rptr[3][1] - atlas_CRS->rptr[3][1]);	    
+	  }
+	}
+      }
+    }
+  }
+
+  MatrixFree(&delta_RAS);
+  MatrixFree(&image_CRS);
+  MatrixFree(&image_RAS);
+  MatrixFree(&atlas_CRS);
+  MatrixFree(&atlas_RAS);
 }
 
 
