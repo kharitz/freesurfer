@@ -462,6 +462,7 @@ endif
 # variables. This call assumes that there will be no superfluous
 # terminal output, but this is not necessarily the case, so grep with set
 eval "`rca-config2csh $tmp_config | grep set`"
+if($NoFixACJ) set FixACJ = 0
 
 # Overwrite argv with all the arguments that were not recognized in the config
 set argv = ( "`cat $tmp_unknown_args`" )
