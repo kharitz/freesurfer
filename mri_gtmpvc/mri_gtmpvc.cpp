@@ -86,6 +86,7 @@ static void print_help(void) ;
 static void print_version(void) ;
 static void dump_options(FILE *fp);
 int main(int argc, char *argv[]) ;
+int WriteBetaSV(GTM *gtm, MATRIX *TimeMin, char *OutBetaCSVFile, char *sep = (char*)",");
 
 const char *Progname = NULL;
 char *cmdline, cwd[2000];
@@ -130,6 +131,7 @@ char *SrcVolFile=NULL,*SegVolFile=NULL,*MaskVolFile=NULL;
 char *OutDir=NULL,*AuxDir,*RBVVolFile=NULL;
 char *OutBetaFile=NULL,*OutBetaVarFile=NULL,*OutXtXFile=NULL;
 char *SrcBetaFile=NULL;
+char *OutBetaCSVFile=NULL, *OutBetaTSVFile=NULL;
 int SynthOnly=0,SaveSynth=0;
 int GTMSynthSeed=0,GTMSynthReps=1;
 double SynthPSFFWHMCol=0,SynthPSFFWHMRow=0,SynthPSFFWHMSlice=0,SynthPSFMBSlope=0;
@@ -158,6 +160,7 @@ int SaveRBVSeg=0;
 int SaveGTMText=0;
 int LateralizeTT=0;
 int UpdateTT=0;
+MATRIX *TimeMin = NULL;
 
 GTM *gtm;
 GTMOPT *gtmopt;
@@ -974,6 +977,8 @@ int main(int argc, char *argv[])
   err=MRIwrite(mritmp,OutBetaFile);
   if(err) exit(1);
   MRIfree(&mritmp);
+  if(OutBetaCSVFile) WriteBetaSV(gtm, TimeMin, OutBetaCSVFile,(char*)",");
+  if(OutBetaTSVFile) WriteBetaSV(gtm, TimeMin, OutBetaTSVFile,(char*)"\t");
 
   if(SaveGTMText)
     GTMwriteText(gtm, OutDir, 1);
@@ -1574,6 +1579,22 @@ static int parse_commandline(int argc, char **argv) {
       }
       nargsused = gtm->n_km_hbids;
     } 
+    else if (!strcmp(option, "--tsec")) {
+      if(nargc < 1) CMDargNErr(option,1);
+      MATRIX *TimeSec = MatrixReadTxt(pargv[0], NULL);
+      if(TimeSec == NULL) exit(1);
+      TimeMin = MatrixAlloc(TimeSec->rows,1,MATRIX_REAL);
+      for(int k=0; k < TimeSec->rows; k++)
+	TimeMin->rptr[k+1][1] = TimeSec->rptr[k+1][1]/60;
+      MatrixFree(&TimeSec);
+      nargsused = 1;
+    }
+    else if (!strcmp(option, "--tmin")) {
+      if(nargc < 1) CMDargNErr(option,1);
+      TimeMin = MatrixReadTxt(pargv[0], NULL);
+      if(TimeMin == NULL) exit(1);
+      nargsused = 1;
+    }
     else if(!strcasecmp(option, "--save-input")) SaveInput = 1;
     else if(!strcasecmp(option, "--X0"))   SaveX0 = 1;
     else if(!strcasecmp(option, "--X"))    SaveX = 1;
@@ -1599,6 +1620,10 @@ static int parse_commandline(int argc, char **argv) {
       VRFStatsFile = strcpyalloc(tmpstr);
       sprintf(tmpstr,"%s/gtm.nii.gz",OutDir);
       OutBetaFile = strcpyalloc(tmpstr);
+      sprintf(tmpstr,"%s/gtm.csv",OutDir);
+      OutBetaCSVFile = strcpyalloc(tmpstr);
+      sprintf(tmpstr,"%s/gtm.tsv",OutDir);
+      OutBetaTSVFile = strcpyalloc(tmpstr);
       sprintf(tmpstr,"%s/gtm.var.nii.gz",OutDir);
       OutBetaVarFile = strcpyalloc(tmpstr);
       sprintf(tmpstr,"%s/seg.nii.gz",AuxDir);
@@ -2609,3 +2634,63 @@ MRI *GTMnoPVC(GTM *gtm)
   return(nopvc);
 }
 
+// TSV (ie, sep = "\t") can be loaded in to pmod and kinfitr. Time is
+// assumed to be start time.  End time is assumed to be the start of
+// the next frame. For the last frame, the end time is set to the
+// start time plus the diff between the last frame and the second to
+// last frame.  This is a bit of a hack; it would be better to pass
+// the start and end times directly. Might be good to pass the units
+// in too. Probably need to have a class for it; maybe add WB, plasma,
+// and parent for completeness (but those may need a separate time
+// scale).
+int WriteBetaSV(GTM *gtm, MATRIX *TimeMin, char *OutBetaSVFile, char *sep)
+{
+  FILE *fp = fopen(OutBetaSVFile,"w");
+  char *c = (char*)"";
+  char *units;
+  if(gtm->rescale) units = (char*) " RSUV";
+  else units = (char*)"unknown"; // or use kBq/cc
+  if(TimeMin) {
+    fprintf(fp,"start[min]%send[%s]",sep,units);
+    c = sep;
+  }
+  if(gtm->DoKMRef) {
+    fprintf(fp,"%sReference%s",c,units);
+    c = sep;
+  }
+  if(gtm->DoKMHB) {
+    fprintf(fp,"%sHiBind%s",c,units);
+    c = sep;
+  }
+  for(int n=1; n < gtm->ctGTMSeg->nentries; n++){ //1=skip unknown
+    if(!gtm->ctGTMSeg->entries[n]) continue;
+    fprintf(fp,"%s%s",c,gtm->ctGTMSeg->entries[n]->name);
+    c = sep;
+  }
+  fprintf(fp,"\n");
+  c = (char*)"";
+  for(int f=0; f < gtm->beta->cols; f++){
+    if(TimeMin) {
+      float tend;
+      if(f != gtm->beta->cols-1) tend = TimeMin->rptr[f+2][1];
+      else tend = TimeMin->rptr[f+1][1] + (TimeMin->rptr[f+1][1]-TimeMin->rptr[f+0][1]);
+      fprintf(fp,"%10.5f%s%10.5f",TimeMin->rptr[f+1][1],sep,tend);
+      c = sep;
+    }
+    if(gtm->DoKMRef) {
+      fprintf(fp,"%s%12.7f",c,gtm->km_reftac->rptr[f+1][1]);
+      c = sep;
+    }
+    if(gtm->DoKMHB) {
+      fprintf(fp,"%s%12.7f",c,gtm->km_hbtac->rptr[f+1][1]);
+      c = sep;
+    }
+    for(int r=0; r < gtm->beta->rows; r++) {
+      fprintf(fp,"%s%12.7f",c,gtm->beta->rptr[r+1][f+1]);
+      c = sep;
+    }
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+  return(0);
+}
