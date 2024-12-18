@@ -732,16 +732,25 @@ double MyVTKUtils::GetImageDataComponent(char* ptr, int* dim, size_t nNumberOfFr
 {
   switch (data_type)
   {
+  case VTK_CHAR:
+  case VTK_SIGNED_CHAR:
+    return ((char*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
   case VTK_UNSIGNED_CHAR:
     return ((unsigned char*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
   case VTK_INT:
     return ((int*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
-  case VTK_LONG:
-    return ((long*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
-  case VTK_FLOAT:
-    return ((float*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
+  case VTK_UNSIGNED_INT:
+    return ((unsigned int*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
   case VTK_SHORT:
     return ((short*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
+  case VTK_UNSIGNED_SHORT:
+    return ((unsigned short*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
+  case VTK_FLOAT:
+    return ((float*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
+  case VTK_LONG:
+    return ((long*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
+  case VTK_UNSIGNED_LONG:
+    return ((unsigned long*)ptr)[(k*dim[0]*dim[1]+j*dim[0]+i)*nNumberOfFrames + nframe];
   }
   return 0;
 }
