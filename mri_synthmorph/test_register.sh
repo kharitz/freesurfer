@@ -34,7 +34,7 @@ compare_vol out_2.mgz deform_2.mgz --thresh 0.02
 
 # deformable registration with mid-space initialization
 t -m def -Mi affine.lta -o out.nii.gz moving.mgz fixed.mgz
-compare_vol out.nii.gz deform_mid.nii.gz --thresh 0.02
+compare_vol out.nii.gz deform_mid.nii.gz --thresh 0.02 --geo-thresh 1e-4
 
 # joint registration
 t -m joint -o out.mgz moving.mgz fixed.mgz
@@ -61,6 +61,12 @@ mri_convert=$(find_path $FSTEST_CWD mri_convert/mri_convert)
 t -t out.nii.gz moving.mgz fixed.mgz
 test_command $mri_convert -odt float -at out.nii.gz moving.mgz out.mgz
 compare_vol out.mgz joint.mgz --thresh 1
+
+# displacements in RAS space
+mri_warp_convert=$(find_path $FSTEST_CWD mri_warp_convert/mri_warp_convert)
+test_command $mri_warp_convert -g moving.mgz --inras out.nii.gz --outmgzwarp out.mgz
+test_command $mri_convert -odt float -at out.mgz moving.mgz moved.mgz
+compare_vol moved.mgz joint.mgz --thresh 1 --geo-thresh 1e-4
 
 # illegal arguments
 EXPECT_FAILURE=1

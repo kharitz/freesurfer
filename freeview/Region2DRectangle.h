@@ -67,12 +67,23 @@ public:
     m_bEnableStats = bStats;
   }
 
+  int GetWidth()
+  {
+    return m_nX2 - m_nX1;
+  }
+
+  int GetHeight()
+  {
+    return m_nY2 - m_nY1;
+  }
+
+  void UpdateWorldCoords();
+
   QString DataToString();
 
   Region2D* ObjectFromString(RenderView2D* view, const QString& text);
 
 protected:
-  void UpdateWorldCoords();
   int GetRange( double[3][2] );
 
   vtkSmartPointer<vtkActor2D>   m_actorRect;

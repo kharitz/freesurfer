@@ -424,6 +424,11 @@ public:
     return m_bShow2DContour;
   }
 
+  bool GetAutoWindowSlice()
+  {
+    return m_bAutoWindowSlice;
+  }
+
 public slots:
   void SetOpacity( double opacity );
   void SetUpSampleMethod( int nUpSampleMethod );
@@ -489,6 +494,8 @@ public slots:
 
   void SetVectorNormThreshold(double dVal);
 
+  void SetAutoWindowSlice(bool b);
+
 signals:
   void ColorMapChanged();
   void ResliceInterpolationChanged();
@@ -510,6 +517,7 @@ signals:
   void VectorLineWidthChanged(double val);
   void VectorSkipChanged(int nSkip);
   void AutoAdjustFrameContrastChanged(bool);
+  void AutoWindowSliceChanged(bool);
 
 private:
   void UpdateMinMaxValues();
@@ -602,6 +610,7 @@ private:
 
   bool    m_bUsePercentile;
   bool    m_bAutoAdjustFrameLevel;
+  bool    m_bAutoWindowSlice;
   QMap<int, QPair<double, double> > m_mapMinMaxValues;
   QMap<int, double> m_mapMeanValues;
 

@@ -8616,7 +8616,7 @@ static MRI *niiRead(const char *fname, int read_volume)
     if (hdr.intent_code == NIFTI_INTENT_DISPVECT)
     {
       mri->intent = MGZ_INTENT_WARPMAP;
-      mri->warpFieldFormat = WarpfieldDTFMT:: WARPFIELD_DTFMT_DISP_RAS;
+      mri->warpFieldFormat = WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS;
       mri->version = ((MGZ_INTENT_WARPMAP & 0xffff ) << 8) | MGH_VERSION;
       printf("[INFO] niiRead(): (no header extension) NIFTI_INTENT_DISPVECT => MGZ_INTENT_WARPMAP, mri->version = %d, mri->intent = %d (%s)\n", mri->version, mri->intent, MRI::intentName(mri->intent));
     }
@@ -9476,13 +9476,6 @@ static int niiWrite(MRI *mri0, const char *fname, int intent)
   if (fname[fnamelen - 1] == 'z') use_compression = 1;
   if (Gdiag_no > 0) printf("niiWrite: use_compression = %d\n", use_compression);
 
-  if (mri0->intent == MGZ_INTENT_WARPMAP)
-  {
-    // ??? todo: convert from mri->warpFieldFormat to WarpfieldDTFMT:: WARPFIELD_DTFMT_DISP_RAS ??? 
-    if (mri0->warpFieldFormat != WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
-      printf("[INFO] TODO: niiWrite(): convert displacement from %d to %d\n", mri0->warpFieldFormat, WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS);
-  }
-
   // Check for ico7 surface
   if (mri0->width == 163842 && mri0->height == 1 && mri0->depth == 1) {
     // printf("niiWrite: reshaping\n");
@@ -9602,8 +9595,13 @@ static int niiWrite(MRI *mri0, const char *fname, int intent)
     hdr.dim[5] = mri->nframes;
     printf("[INFO] niiWrite(): MGZ_INTENT_WARPMAP => NIFTI_INTENT_DISPVECT, intent_code = %d, dimensions = {%d, %d, %d, %d, %d, %d, %d, %d}\n",
            hdr.intent_code, hdr.dim[0], hdr.dim[1], hdr.dim[2], hdr.dim[3], hdr.dim[4], hdr.dim[5], hdr.dim[6], hdr.dim[7]);
+    // convert from mri->warpFieldFormat to WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS
     if (mri->warpFieldFormat != WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS)
-      printf("[WARN] niiWrite(): displacement not in DISP_RAS format\n");
+    {
+      printf("[INFO] niiWrite(): convert displacement from %d to %d\n", mri->warpFieldFormat, WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS);
+      Warpfield *warp = new Warpfield(mri);
+      warp->changeFormat(WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_RAS);
+    }
   }
 
   /* set the nifti header qform values */

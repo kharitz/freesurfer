@@ -8,7 +8,7 @@ class  MRI;
 struct MRIS;
 struct MATRIX;
 
-struct WarpfieldDTFMT{
+struct WarpfieldDTFMT {
   static const int WARPFIELD_DTFMT_UNKNOWN  = -1;
   // one of these will be saved under TAG_WARPFIELD_DTFMT in mgz    
   static const int WARPFIELD_DTFMT_ABS_CRS  = 0;
@@ -22,6 +22,7 @@ class Warpfield
 public:
   // src = image, dst/trg = atlas
   Warpfield();
+  Warpfield(MRI *mri);
   ~Warpfield();
 
   // convert M3z into 4-frame MRI warp map
@@ -33,18 +34,21 @@ public:
   MRI *invert(const char *fname, const int dataformat=WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS);
   MRI *invert(GCA_MORPH *gcam, const int dataformat=WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS);
   
-  // read 4-frame MRI warp map into __warpmap
+  // read 4-frame MRI warp map into __warpmap, and convert it to GCAM
   GCA_MORPH *read(const char *fname);
+#if 0
+  // convert existing warp map to GCAM
+  GCA_MORPH *togcam();
+#endif
   
   // write 4-frame MRI warp map saved in __warpmap to disk
   int write(const char *fname);
 
-  // creat mgz warp with given dimensions, src/dst VOL_GEOM, dataformat
-  void create(int width, int height, int depth, const VOL_GEOM& srcGeom, const VOL_GEOM& dstGeom,
-	      int spacing, double exp_k, const MATRIX *affine,
-	      const int dataformat=WarpfieldDTFMT::WARPFIELD_DTFMT_ABS_CRS);
   // set source coordinates at target [c,r,s] based on dataformat
   void setWarp(int c, int r, int s, float fcs, float frs, float fss, int label);
+
+  // change warp field format
+  void changeFormat(const int newformat=WarpfieldDTFMT::WARPFIELD_DTFMT_DISP_CRS);
   
   // apply warpmap to MRI/MRIS
   int applyWarp(const MRI *inmri, MRI *outmri);
@@ -60,8 +64,14 @@ private:
   MATRIX *__dstRAS2Vox;           // target ras2vox
   MATRIX *__dstVox2RAS;           // target vox2ras
 
+  bool __freewarpmap;             // whether to free __warpmap in destructor
   MRI *__warpmap;                 // 4-frame MRI warping map (dst => src)
   MRI *__warpmap_inv;             // inverted __warpmap (src => dst)
+
+  void __changeFormatFrom_abs_crs(const int newformat);
+  void __changeFormatFrom_disp_crs(const int newformat);
+  void __changeFormatFrom_abs_ras(const int newformat);
+  void __changeFormatFrom_disp_ras(const int newformat);
 };
 
 #endif // WARPFIELD_H

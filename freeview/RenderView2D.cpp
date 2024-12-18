@@ -344,6 +344,21 @@ void RenderView2D::OnSlicePositionChanged(bool bCenter)
       this->CenterAtCursor();
   }
 
+  if (MainWindow::GetMainWindow()->GetMainView() == this && m_selection2D->GetWidth() > 0)
+  {
+    QList<Layer*> layers = GetSelectWindowAdjustableLayers();
+    m_selection2D->UpdateWorldCoords();
+    for (int i = 0; i < layers.size(); i++)
+    {
+      LayerMRI* layer = qobject_cast<LayerMRI*>(layers[i]);
+      if (layer->GetProperty()->GetAutoWindowSlice() && layer->IsVisible())
+      {
+        StopSelection();
+        break;
+      }
+    }
+  }
+
   RenderView::OnSlicePositionChanged(bCenter);
 }
 
@@ -403,9 +418,8 @@ void RenderView2D::UpdateSelection( int nX, int nY )
   m_selection2D->SetBottomRight( nX, nY );
 }
 
-void RenderView2D::StopSelection()
+QList<Layer*> RenderView2D::GetSelectWindowAdjustableLayers()
 {
-  m_selection2D->Show( false );
   QList<Layer*> layers = MainWindow::GetMainWindow()->GetSelectedLayers("MRI");
   if (layers.size() < 2)
   {
@@ -427,6 +441,13 @@ void RenderView2D::StopSelection()
       }
     }
   }
+  return layers;
+}
+
+void RenderView2D::StopSelection()
+{
+  m_selection2D->Show( false );
+  QList<Layer*> layers = GetSelectWindowAdjustableLayers();
   
   for (int i = 0; i < layers.size(); i++)
   {
