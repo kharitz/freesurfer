@@ -237,9 +237,9 @@ if np.sum(np.abs(aff-FIELDaff))>1e-6:
 # This is also a good opportunity to get the grids!
 vectors = [torch.arange(0, s, device=device) for s in Iim.shape]
 IJKim = torch.stack(torch.meshgrid(vectors))
-RAS = torch.stack([aff[0,0] * IJKim[0] + aff[0,1] * IJKim[1] + aff[0,2] * IJKim[2] + aff[0,3] + FIELD[...,0],
-                     aff[1,0] * IJKim[0] + aff[1,1] * IJKim[1] + aff[1,2] * IJKim[2] + aff[1,3] + FIELD[...,1],
-                     aff[2,0] * IJKim[0] + aff[2,1] * IJKim[1] + aff[2,2] * IJKim[2] + aff[2,3] + FIELD[...,2]])
+RAS = torch.stack([aff[0,0] * IJKim[0] + aff[0,1] * IJKim[1] + aff[0,2] * IJKim[2] + aff[0,3] + torch.squeeze(FIELD[...,0]),
+                     aff[1,0] * IJKim[0] + aff[1,1] * IJKim[1] + aff[1,2] * IJKim[2] + aff[1,3] + torch.squeeze(FIELD[...,1]),
+                     aff[2,0] * IJKim[0] + aff[2,1] * IJKim[1] + aff[2,2] * IJKim[2] + aff[2,3] + torch.squeeze(FIELD[...,2])])
 del FIELD
 
 # Added in summer 2024: kill bottom of medulla
