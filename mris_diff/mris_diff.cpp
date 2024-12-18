@@ -1113,8 +1113,9 @@ static int parse_commandline(int argc, char **argv) {
       printf("Use Exact = %d\n",UseExact);
       MRI *mindist;
       if(UseExact){
-        MRISdistanceBetweenSurfacesExact(surf2, surf1);
+	double dminmin = MRISdistanceBetweenSurfacesExact(surf2, surf1);
         mindist = MRIcopyMRIS(NULL, surf2, 0, "curv");
+	printf("dminmin = %g\n",dminmin);
       }
       else 
         mindist = MRISminDist(surf1, surf2);
