@@ -2,6 +2,7 @@
 
 import os
 import sys
+import pathlib
 import argparse
 import textwrap
 import surfa as sf
@@ -338,7 +339,7 @@ r.add_argument('-n', dest='steps', metavar='steps', type=int, **add_flags('steps
 r.add_argument('-e', dest='extent', type=int, **add_flags('extent'))
 r.add_argument('-w', dest='weights', metavar='weights', action='append')
 r.add_argument('-v', dest='verbose', action='store_true')
-r.add_argument('-d', dest='out_dir', metavar='dir')
+r.add_argument('-d', dest='out_dir', metavar='dir', type=pathlib.Path)
 r.format_help = lambda: utils.rewrap_text(help_register, end='\n\n')
 
 # Transformation arguments.
