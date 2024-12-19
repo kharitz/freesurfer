@@ -442,9 +442,14 @@ GCA_MORPH *Warpfield::read(const char *fname)
   __dstRAS2Vox = gcam->atlas.get_RAS2Vox(0, true);
   __dstVox2RAS = gcam->atlas.get_Vox2RAS(0, true);
 
-  // remove shear components
-  gcam->image.shearless_components();
-  gcam->atlas.shearless_components();
+  /* YJH 2024-12-19
+   * If the function is called from mri_warp_convert, 
+   * this will make the source/target geom in the converted warp shearless.
+   * Move the removal of shear components from transformed volume geometry to GCAMmorphToAtlas().
+   * // remove shear components
+   * gcam->image.shearless_components();
+   * gcam->atlas.shearless_components();
+   */
 
   if (__warpmap->gcamorphAffine)
   {
