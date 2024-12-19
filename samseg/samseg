@@ -395,14 +395,14 @@ while( $#argv != 0 )
       set DoLesion = 1
       breaksw
 
-    case "--lesion-mask-pattern1":
-      if($#argv < 2) goto arg2err;
-      set LesionMaskPattern = ($argv[1] $argv[2]); shift;shift;
-      breaksw
-
     case "--lesion-mask-pattern":
       if($#argv < 1) goto arg1err;
-      set LesionMaskPattern = ($argv[1]); shift;
+      foreach a ($argv)
+        set c = `echo "$a" | cut -c1`
+        if("$c" == "-") break;
+        set LesionMaskPattern = ($LesionMaskPattern $argv[1]); shift;
+      end
+      set DoLesion = 1
       breaksw
 
     case "--gmm":
@@ -925,7 +925,7 @@ usage_exit:
   echo "   analyzing T2 or FLAIR"
   echo " --stiffness K : mesh stiffness"
   echo " --lesion : Turn on lesion segmentation"
-  echo " --lesion-mask-pattern A B : Needed when using T2 (eg, 0 1)"
+  echo " --lesion-mask-pattern A B ... : one for each input. 0=iso, +1=brighter, -1=darker than cortex"
   echo " --bias-field-smoothing-kernel widthMM : width of bias field smoothness"
   echo " --reg reg.{lta,mat} : registration file (LTA or  as output by samseg)"
   echo "    allows using the reg from one run with another run"
