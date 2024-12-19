@@ -173,12 +173,12 @@ def register(arg):
     if not len(mov.shape) == len(fix.shape) == 3:
         sf.system.fatal('input images are not single-frame volumes')
 
-    # Transforms between native voxel and network coordinates. Voxel and network
-    # spaces differ for each image. The networks expect isotropic 1-mm LIA spaces.
-    # We center these on the original images, except for deformable registration:
-    # this assumes prior affine registration, so we center the moving network space
-    # on the fixed image, to take into account affine transforms applied by
-    # resampling, updating the header, or passed on the command line alike.
+    # Transforms between native voxel and network coordinates. Voxel and
+    # network spaces differ for each image. The networks expect isotropic 1-mm
+    # LIA spaces. Center these on the original images, except in the deformable
+    # case: it assumes prior affine registration, so we center the moving
+    # network space on the fixed image, to take into account affine transforms
+    # via resampling, updating the header, or passed on the command line alike.
     center = fix if arg.model == 'deform' else None
     net_to_mov, mov_to_net = network_space(mov, shape=in_shape, center=center)
     net_to_fix, fix_to_net = network_space(fix, shape=in_shape)
@@ -189,10 +189,9 @@ def register(arg):
     ras_to_mov = mov.geom.world2vox.matrix
     ras_to_fix = fix.geom.world2vox.matrix
 
-    # Incorporate an initial matrix transform, mapping moving to fixed coordinates,
-    # as FreeSurfer LTAs store the inverse of what you might expect. For mid-space
-    # initialization, compute the matrix square root of the transform between fixed
-    # and moving network space.
+    # Incorporate an initial matrix transform from moving to fixed coordinates,
+    # as LTAs store the inverse. For mid-space initialization, compute the
+    # square root of the transform between fixed and moving network space.
     if arg.init:
         init = sf.load_affine(arg.init).convert(space='voxel')
         if init.ndim != 3 \
@@ -211,22 +210,14 @@ def register(arg):
         net_to_mov = net_to_mov @ tf.linalg.inv(init)
         mov_to_net = np.linalg.inv(net_to_mov)
 
-    # Take the input images to network space. When saving the moving image with the
-    # correct voxel-to-RAS matrix after incorporating an initial matrix transform,
-    # an image viewer taking this matrix into account will show an unchanged image.
-    # However, the networks only see the voxel data, which have been moved.
+    # Take the input images to network space. When saving the moving image with
+    # the correct voxel-to-RAS matrix after incorporating an initial transform,
+    # an image viewer taking this matrix into account will show an unchanged
+    # image. The networks only see the voxel data, which have been moved.
     inputs = (
         transform(mov, net_to_mov, shape=in_shape, normalize=True, batch=True),
         transform(fix, net_to_fix, shape=in_shape, normalize=True, batch=True),
     )
-    if arg.out_dir:
-        os.makedirs(arg.out_dir, exist_ok=True)
-        inp_1 = os.path.join(arg.out_dir, 'inp_1.mgz')
-        inp_2 = os.path.join(arg.out_dir, 'inp_2.mgz')
-        geom_1 = sf.ImageGeometry(in_shape, vox2world=mov_to_ras @ net_to_mov)
-        geom_2 = sf.ImageGeometry(in_shape, vox2world=fix_to_ras @ net_to_fix)
-        sf.Volume(inputs[0][0], geom_1).save(inp_1)
-        sf.Volume(inputs[1][0], geom_2).save(inp_2)
 
     # Network. For deformable-only registration, `HyperVxmJoint` ignores the
     # `mid_space` argument, and the initialization will determine the space.
@@ -250,11 +241,12 @@ def register(arg):
     for f in arg.weights:
         load_weights(model, weights=f)
 
-    # Inference. The first transform maps from the moving to the fixed image, or
-    # equivalently, from fixed to moving coordinates. The second is the inverse.
-    # Convert transforms between moving and fixed network spaces to transforms
-    # between the original voxel spaces.
-    fw, bw = map(tf.squeeze, model(inputs))
+    # Inference. The first transform maps from the moving to the fixed image,
+    # or equivalently, from fixed to moving coordinates. The second is the
+    # inverse. Convert transforms between moving and fixed network spaces to
+    # transforms between the original voxel spaces.
+    pred = tuple(map(tf.squeeze, model(inputs)))
+    fw, bw = pred
     fw = vxm.utils.compose((net_to_mov, fw, fix_to_net), shift_center=False, shape=fix.shape)
     bw = vxm.utils.compose((net_to_fix, bw, mov_to_net), shift_center=False, shape=mov.shape)
 
@@ -263,18 +255,19 @@ def register(arg):
         fw, bw = bw, fw
         fw = sf.Affine(fw, source=mov, target=fix, space='voxel')
         bw = sf.Affine(bw, source=fix, target=mov, space='voxel')
+        format = dict(space='world')
 
     else:
         fw = sf.Warp(fw, source=mov, target=fix, format=sf.Warp.Format.disp_crs)
         bw = sf.Warp(bw, source=fix, target=mov, format=sf.Warp.Format.disp_crs)
+        format = dict(format=sf.Warp.Format.disp_ras)
 
     # Output transforms.
-    f = dict(space='world') if is_mat else dict(format=sf.Warp.Format.disp_ras)
     if arg.trans:
-        fw.convert(**f).save(arg.trans)
+        fw.convert(**format).save(arg.trans)
 
     if arg.inverse:
-        bw.convert(**f).save(arg.inverse)
+        bw.convert(**format).save(arg.inverse)
 
     # Moved images.
     if arg.out_moving:
@@ -282,6 +275,38 @@ def register(arg):
 
     if arg.out_fixed:
         fix.transform(bw, resample=not arg.header_only).save(arg.out_fixed)
+
+    # Outputs in network space.
+    if arg.out_dir:
+        arg.out_dir.mkdir(exist_ok=True)
+
+        # Input images.
+        mov = sf.ImageGeometry(in_shape, vox2world=mov_to_ras @ net_to_mov)
+        fix = sf.ImageGeometry(in_shape, vox2world=fix_to_ras @ net_to_fix)
+        mov = sf.Volume(inputs[-2][0], geometry=fix if arg.init else mov)
+        fix = sf.Volume(inputs[-1][0], geometry=fix)
+        mov.save(filename=arg.out_dir / 'inp_1.nii.gz')
+        fix.save(filename=arg.out_dir / 'inp_2.nii.gz')
+
+        fw, bw = pred
+        if is_mat:
+            fw, bw = bw, fw
+            fw = sf.Affine(fw, source=mov, target=fix, space='voxel')
+            bw = sf.Affine(bw, source=fix, target=mov, space='voxel')
+            ext = 'lta'
+
+        else:
+            fw = sf.Warp(fw, source=mov, target=fix, format=sf.Warp.Format.disp_crs)
+            bw = sf.Warp(bw, source=fix, target=mov, format=sf.Warp.Format.disp_crs)
+            ext = 'nii.gz'
+
+        # Transforms.
+        fw.convert(**format).save(filename=arg.out_dir / f'tra_1.{ext}')
+        bw.convert(**format).save(filename=arg.out_dir / f'tra_2.{ext}')
+
+        # Moved images.
+        mov.transform(fw).save(filename=arg.out_dir / 'out_1.nii.gz')
+        fix.transform(bw).save(filename=arg.out_dir / 'out_2.nii.gz')
 
     vmpeak = sf.system.vmpeak()
     if vmpeak is not None:
