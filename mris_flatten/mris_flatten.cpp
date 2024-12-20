@@ -39,6 +39,9 @@
 #include "fastmarching.h"
 #include "mri2.h"
 #include "mrishash.h"
+#ifdef _OPENMP
+#include "romp_support.h"
+#endif
 
 
 int main(int argc, char *argv[]) ;
@@ -57,6 +60,8 @@ static INTEGRATION_PARMS  parms ;
 #define BASE_DT_SCALE     1.0
 static float base_dt_scale = BASE_DT_SCALE ;
 static char *label_fname = NULL ;
+char *seg_fname = NULL ;
+std::vector<int> segidlist;
 static int nbrs = 2 ;
 static int do_inflate = 0 ;
 static double disturb = 0 ;
@@ -302,6 +307,7 @@ main(int argc, char *argv[])
   parms.base_dt = base_dt_scale * parms.dt ;
   in_patch_fname = argv[1] ;
   out_patch_fname = argv[2] ;
+  printf("inpatch = %s, outpatch = %s\n",in_patch_fname,out_patch_fname);
   FileNamePath(in_patch_fname, path) ;
   cp = strrchr(in_patch_fname, '/') ;
   if (!cp)
@@ -380,15 +386,25 @@ main(int argc, char *argv[])
   {
     MRISsetNeighborhoodSizeAndDist(mris, mris->vertices_topology[0].nsizeMax);
     MRISresetNeighborhoodSize(mris, mris->vertices_topology[0].nsizeMax) ; // set back to max
-    if (label_fname) // read in a label instead of a patch
+    if(label_fname || seg_fname) // read in a label instead of a patch
     {
       LABEL *area ;
-      area = LabelRead(NULL, label_fname) ;
-      if (area == NULL)
+      if(seg_fname){
+	printf("Reading seg %s\n",seg_fname);
+	MRI *seg = MRIread(seg_fname);
+	if(seg == NULL) exit(1);
+	area = MRISseg2Label(mris, seg, segidlist); 
+	MRIfree(&seg);
+      }
+      else {
+	printf("Reading label %s\n",label_fname);
+	area = LabelRead(NULL, label_fname) ;
+      }
+      if(area == NULL)
         ErrorExit(ERROR_BADPARM, "%s: could not read label file %s",
                   Progname, label_fname) ;
 
-      LabelDilate(area, mris, dilate_label, CURRENT_VERTICES) ;
+      if(dilate_label > 0) LabelDilate(area, mris, dilate_label, CURRENT_VERTICES) ;
       MRISclearMarks(mris) ;
       LabelMark(area, mris) ;
       MRISripUnmarked(mris) ;
@@ -415,20 +431,6 @@ main(int argc, char *argv[])
     }
     MRISremoveRipped(mris) ;
     MRISupdateSurface(mris) ;
-#if 0
-    mris->nsize = 1 ; // before recalculation of 2 and 3-nbrs
-    {
-      int vno ;
-      VERTEX *v ;
-      for (vno= 0 ; vno < mris->nvertices ; vno++)
-      {
-        v = &mris->vertices[vno] ;
-        v->vtotal = v->vnum ;
-        v->nsize = 1 ;
-      }
-    }
-    MRISsetNeighborhoodSizeAndDist(mris, nbrs) ;
-#endif
   }
   if(SurfCopyCoords) MRIScopyCoords(mris,SurfCopyCoords);
 
@@ -751,13 +753,40 @@ get_option(int argc, char *argv[])
     nargs = 1 ;
     fprintf(stderr, "dilating cuts %d times\n", dilate) ;
   }
-  else if (!stricmp(option, "copy-coords"))
-  {
+  else if (!stricmp(option, "copy-coords")){
     SurfCopyCoords = MRISread(argv[2]);
     if(SurfCopyCoords == NULL) exit(1);
     nargs = 1 ;
     fprintf(stderr, "copying coords from %s\n", argv[2]);
   }
+  else if (!stricmp(option, "seg")){
+    // argv[1] = -seg
+    seg_fname = argv[2] ;
+    dilate_label = atof(argv[3]) ;
+    nargs = 2;
+    printf("loading seg %s and dilating it %d times before flattening\n",
+	   seg_fname, dilate_label) ;
+    int n = 4;
+    while(n < argc && argv[n][0] != '-'){
+      segidlist.push_back(atoi(argv[n]));
+      n++;
+      nargs++;
+    }
+    if(segidlist.size()>0){
+      printf("  segidlist ");
+      for(n=0; n < segidlist.size(); n++) printf("%d ",segidlist[n]);
+      printf("\n");
+    }
+    fflush(stdout);
+  }
+  else if(!strcasecmp(option, "threads") || !strcasecmp(option, "nthreads") ){
+    #ifdef _OPENMP
+    int threads;
+    sscanf(argv[2],"%d",&threads);
+    omp_set_num_threads(threads);
+    #endif
+    nargs = 1;
+  } 
   else if (!stricmp(option, "dist"))
   {
     sscanf(argv[2], "%f", &parms.l_dist) ;
@@ -949,8 +978,11 @@ get_option(int argc, char *argv[])
       break ;
     case 'L':
       label_fname = argv[2] ;
-      dilate_label = atof(argv[3]) ;
-      nargs = 2;
+      nargs = 1;
+      if(argv[3][0] != '-'){
+        dilate_label = atof(argv[3]) ;
+        nargs++;
+      }
       printf("loading label %s and dilating it %d times before flattening\n",
              label_fname, dilate_label) ;
       break ;
@@ -1010,42 +1042,41 @@ get_option(int argc, char *argv[])
 static void
 print_usage(void)
 {
-  fprintf(stderr,
-          "Usage: %s [options] <input patch> <output patch>\n", Progname) ;
+  printf("Usage: %s [options] <input patch> <output patch>\n", Progname) ;
 }
 
 static void
 print_help(void)
 {
   print_usage() ;
-  fprintf(stderr,
-          "\nThis program will flatten a surface patch\n");
-  fprintf(stderr, "\nvalid options are:\n\n") ;
-  fprintf(stderr, " -w <# iterations>\n\t"
-          "write out the surface every # of iterations.\n") ;
-  fprintf(stderr,
-          " -distances <nbhd size> <# of vertices at each distance>\n\t"
+  printf("\nThis program will flatten a surface patch\n");
+  printf( "Valid options are:\n\n") ;
+  printf( " -l label ndil : Create input patch from (dilated) label using orig surface.\n") ;
+  printf( " -seg seg ndil <segno1 ...> : Create input patch from (dilated) mask made from seg.\n") ;
+  printf( " -o origsurf : default is %s.\n",original_surf_name) ;
+  printf( " -n niters\n") ;
+  printf( " -a naverages\n") ;
+  printf( " -i : inflate surface\n") ;
+  printf( " -distances <nbhd size> <# of vertices at each distance>\n\t"
           "specify size of neighborhood and number of vertices at each\n\t"
           "distance to be used in the optimization.\n") ;
-  fprintf(stderr,
-          " -dilate <# of dilations>\n\t"
+  printf(" -dilate <# of dilations>\n\t"
           "specify the number of times to dilate the ripped edges to ensure a clean cut\n") ;
-  fprintf(stderr,
-          " -norand\n\t"
+  printf(" -norand\n\t"
           "set the random seed to 0 so that flattening is repeatable\n") ;
-  fprintf(stderr,
-          " -seed <random seed>\n\t"
+  printf(" -seed <random seed>\n\t"
           "set the random seed to a specific value so that flattening is repeatable\n") ;
   printf(" -copy-coords surf : copy xyz coords from surface before flattening\n");
   printf("    This allows creating cuts on, eg, white surface, but flattening the inflated\n");
   printf("    eg, mris_flatten -copy-coords lh.inflated -dilate 1 lh.white.cut lh.inflated.cut.flatten\n");
+  printf( " -w <# iterations> : write out the surface every # of iterations.\n") ;
   exit(1) ;
 }
 
 static void
 print_version(void)
 {
-  fprintf(stderr, "%s\n", getVersion().c_str()) ;
+  printf( "%s\n", getVersion().c_str()) ;
   exit(1) ;
 }
 
