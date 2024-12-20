@@ -15,6 +15,10 @@ compare_vol out.mgz affine.mgz --thresh 0.02
 t -m a -t out.lta -T inv.lta moving.mgz fixed.mgz
 lta_diff out.lta inv.lta --invert2 | awk 'END {print $0; exit !($0<1e-3)}'
 
+# output directory creation
+t -ma -d outputs fixed.mgz moving.mgz
+[ -d outputs ]
+
 # rigid inverse consistency
 t -m rigid -t out.lta -T inv.lta moving.mgz fixed.mgz
 lta_diff out.lta inv.lta --invert2 | awk 'END {print $0; exit !($0<1e-3)}'

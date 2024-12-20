@@ -4336,7 +4336,11 @@ MRI *GCAMmorphToAtlas(MRI *mri_src, GCA_MORPH *gcam, MRI *mri_morphed, int frame
     mri_morphed = MRIallocSequence(width, height, depth, mri_src->type,
       frame < 0 ? mri_src->nframes : 1);
   }
-  useVolGeomToMRI(&gcam->atlas, mri_morphed);
+
+  // remove shears from transformed volume geometry  
+  VOL_GEOM trg_geom = gcam->atlas;
+  trg_geom.shearless_components();
+  useVolGeomToMRI(&trg_geom, mri_morphed);   //useVolGeomToMRI(&gcam->atlas, mri_morphed);
 
   if (getenv("MGH_TAL")) {
     xoff = -7.42;

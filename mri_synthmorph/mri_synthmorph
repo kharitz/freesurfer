@@ -391,6 +391,8 @@ if arg.command == 'register':
     gpu = os.environ.get('CUDA_VISIBLE_DEVICES', '0')
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu if arg.gpu else ''
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0' if arg.verbose else '3'
+    os.environ['NEURITE_BACKEND'] = 'tensorflow'
+    os.environ['VXM_BACKEND'] = 'tensorflow'
     from synthmorph import registration
 
     registration.register(arg)
