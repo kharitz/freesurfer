@@ -23,11 +23,15 @@ import math
 from torch.nn.functional import grid_sample
 #from fireants.io import Image,BatchedImages
 #from fireants.registration import AffineRegistration, GreedyRegistration
-from ext.fireants.io import Image,BatchedImages
-from ext.fireants.registration import AffineRegistration, GreedyRegistration
+#from ext.fireants.io import Image,BatchedImages
+#from ext.fireants.registration import AffineRegistration, GreedyRegistration
+from ext.fireants_trimmed import Image, BatchedImages
+from ext.fireants_trimmed import GreedyRegistration
 import SimpleITK as sitk
 from time import time
-from ERC_bayesian_segmentation.custom_cc_labeldiff_loss import HybridDiceLabelDiffloss
+#from ERC_bayesian_segmentation.custom_cc_labeldiff_loss import HybridDiceLabelDiffloss
+from ext.fireants_trimmed import HybridDiceLabelDiffloss
+
 
 ########################################################
 
@@ -89,6 +93,13 @@ if args.threads<0:
 else:
     print('using %s thread(s)' % args.threads)
 torch.set_num_threads(args.threads)
+
+########################################################
+
+# Reproducibility: https://discuss.pytorch.org/t/reproducibility-with-all-the-bells-and-whistles/81097
+seed = 0; torch.manual_seed(seed); torch.cuda.manual_seed_all(seed); torch.cuda.manual_seed(seed)
+np.random.seed(seed); np.random.seed(seed);
+torch.backends.cudnn.deterministic = True; torch.backends.cudnn.benchmark = False
 
 ########################################################
 

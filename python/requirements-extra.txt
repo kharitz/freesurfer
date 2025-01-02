@@ -31,3 +31,14 @@ scikit-image
 
 # extra packages required for dissection_photo nnUNet util
 SimpleITK
+# Code from Eugenio uses SimpleITK above and also fireants below.
+# But need to use Jackon's custom changes to the setup and
+# install so that fireants iinstall does not revert the install
+# of torch, pandas, nibabel to older versions, and does not
+# change typing package.
+#
+# this one for the most recent commit in the 8.0.0 gamma pre-release build
+fireants@git+https://github.com/jnolan14/FireANTs.git@66d54fef55e42ee3906f5514c50c16b1668e225a
+# this one to get the latest changes or tip of the branch
+# fireants@git+https://github.com/jnolan14/fireANTs.git@FS_integration
+
