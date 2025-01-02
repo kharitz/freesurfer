@@ -5433,7 +5433,7 @@ int RegLandmarks::ReadCoords(void)
   printf("ERROR: reglandmarks only accepts stvp files right now\n");
   return(1);
 }
-LTA *RegLandmarks::ComputeLTA(void)
+LTA *RegLandmarks::ComputeLTA(int Do2D)
 {
 
   if(mrisrc==NULL){
@@ -5456,7 +5456,9 @@ LTA *RegLandmarks::ComputeLTA(void)
 
   int err = ReadCoords();
   if(err) return(NULL);
-  MATRIX *R = ComputeReg(NULL);
+  MATRIX *R;
+  if(Do2D) R = ComputeReg2D(NULL);
+  else     R = ComputeReg(NULL);
   if(coordtype == REGISTER_DAT){
     R = MatrixInverse(R,R);
     if(R==NULL) return(NULL);
@@ -5497,6 +5499,48 @@ MATRIX *RegLandmarks::ComputeReg(MATRIX *R)
       if(r < 3) R->rptr[r+1][c+1] = beta->rptr[c+1][r+1];
     }
   }
+  MatrixFree(&X);
+  MatrixFree(&Xt);
+  MatrixFree(&XtX);
+  MatrixFree(&iXtX);
+  MatrixFree(&iXtXXt);
+  MatrixFree(&beta);
+  return(R);
+}
+MATRIX *RegLandmarks::ComputeReg2D(MATRIX *R)
+{
+  int npoints = sxyz.size();
+  MATRIX *X = MatrixAlloc(npoints,3,MATRIX_REAL);
+  MATRIX *y = MatrixAlloc(npoints,2,MATRIX_REAL);
+  int r,c;
+  for(r=0; r < npoints; r++){
+    X->rptr[r+1][3] = 1;
+    for(c=0; c < 2; c++){
+      X->rptr[r+1][c+1] = sxyz[r][c];
+      y->rptr[r+1][c+1] = txyz[r][c];
+    }
+  }
+  MATRIX *Xnorm = MatrixNormalizeCol(X,NULL,NULL);
+  double Xcond = MatrixNSConditionNumber(Xnorm);
+  MatrixFree(&Xnorm);
+  printf("normalized condition = %g\n",Xcond);
+  MATRIX *Xt = MatrixTranspose(X,NULL);
+  MATRIX *XtX = MatrixMultiply(Xt,X,NULL);
+  MATRIX *iXtX = MatrixInverse(XtX,NULL);
+  if(iXtX==NULL) return(NULL);
+  MATRIX *iXtXXt = MatrixMultiply(iXtX,Xt,NULL);
+  MATRIX *beta = MatrixMultiply(iXtXXt,y,NULL);
+  if(R==NULL) R = MatrixAlloc(4,4,MATRIX_REAL);
+  R->rptr[4][4] = 1.0;
+  for(r=0; r < 2; r++){
+    for(c=0; c < 2; c++){
+      if(r < 3) R->rptr[r+1][c+1] = beta->rptr[c+1][r+1];
+    }
+  }
+  
+  R->rptr[3][3] = 1;
+  R->rptr[1][4] = beta->rptr[3][1];
+  R->rptr[2][4] = beta->rptr[3][2];
   MatrixFree(&X);
   MatrixFree(&Xt);
   MatrixFree(&XtX);

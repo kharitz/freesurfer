@@ -285,7 +285,8 @@ public:
   int WriteCoords(const char *fname, const LTA *lta);
   fsPointSet Coords2PointSet(const LTA *lta);
   MATRIX *ComputeReg(MATRIX *R);
-  LTA *ComputeLTA(void);
+  MATRIX *ComputeReg2D(MATRIX *R);
+  LTA *ComputeLTA(int Do2D=0);
 };
 
 #endif
