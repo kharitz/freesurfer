@@ -725,12 +725,13 @@ static int parse_commandline(int argc, char **argv) {
       sscanf(pargv[0],"%d",&cmdargs->nitersmax);
       nargsused = 1;
     } 
-    else if (!strcasecmp(option, "--mat2par")) {
+    else if(!strcasecmp(option, "--mat2par") || !strcasecmp(option, "--mat2par-vox")) {
       if(nargc < 1) CMDargNErr(option,1);
       LTA *lta;
       lta = LTAread(pargv[0]);
       if(lta==NULL) exit(1);
-      LTAchangeType(lta,LINEAR_RAS_TO_RAS);
+      if(!strcasecmp(option, "--mat2par")) LTAchangeType(lta,LINEAR_RAS_TO_RAS);
+      if(!strcasecmp(option, "--mat2par-vox")) LTAchangeType(lta,LINEAR_VOX_TO_VOX);
       LTAinvert(lta,lta);
       double p[12];
       TranformExtractAffineParams(lta->xforms[0].m_L,p);
@@ -1056,7 +1057,8 @@ static void print_usage(void) {
   printf("   --no-mov-oob : do not count mov voxels that are out-of-bounds as 0 (default)\n");
   printf("   --init-reg-save initreg.lta : save initial registration\n");
   printf("   --init-reg-save-only initreg.lta : save initial registration and exit\n");
-  printf("   --mat2par reg.lta : extract parameters out of registration\n");
+  printf("   --mat2par reg.lta : extract parameters out of RAS2RAS registration (lta does not need to be RAS)\n");
+  printf("   --mat2par-vox reg.lta : extract parameters out of VOX2VOX registration (lta does not need to be VOX)\n");
   printf("   --mat2rot reg.lta rotreg.lta: convert registration to a pure rotation\n");
   printf("   --par2mat par1-par12 srcvol trgvol reg.lta : convert parameters to a  registration\n");
   printf("      the subject in the output reg.lta can be set with --s before --par2mat\n");
