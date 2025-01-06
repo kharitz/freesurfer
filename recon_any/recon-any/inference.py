@@ -1,5 +1,6 @@
 import sys
 sys.path.append(__file__)
+sys.path.append('/usr/pubsw/packages/CUDA/9.0/lib64')
 import torch
 import os
 from unet3d.model import UNet3D
@@ -192,7 +193,6 @@ def main():
         # else:
         #     bf_corr = im_orig * torch.exp(-pred_bf[..., None])
 
-
         # Detach from GPU
         # im_orig = im_orig.detach().cpu().numpy()
         pred_seg = pred_seg.detach().cpu().numpy()
@@ -229,6 +229,16 @@ def main():
         WM[WM == 8] = 0
         WM[WM == 47] = 0
         WM[WM == 24] = 0
+        WM[WM == 7] = 0 
+        WM[WM == 46] = 0 
+        WM[WM == 14] = 0 # 3rd Ventricles
+        WM[WM == 15] = 0 # 4th Ventricles
+        WM[WM == 17] = 0 # LHippocampus
+        WM[WM == 18] = 0 # LAmygdala
+        WM[WM == 53] = 0 # RHippocampus
+        WM[WM == 54] = 0 # RAmygdala
+        WM[WM == 85] = 0 # Optic-Chiasm
+        # Done        
         WM[WM > 0] = 110
         WM[(pred_seg == 4) | (pred_seg == 43)] = 250
 
@@ -236,6 +246,9 @@ def main():
         FILLED[pred_seg == 16] = 0
         FILLED[pred_seg == 7] = 0
         FILLED[pred_seg == 46] = 0
+        FILLED[pred_seg == 8] = 0 
+        FILLED[pred_seg == 47] = 0 
+        # Done
         if (args['case_type'] == 'right-ccb' or args['case_type'] == 'right-c'):
             FILLED[FILLED > 0] = 127
         elif (args['case_type'] == 'left-ccb' or args['case_type'] == 'left-c'):
