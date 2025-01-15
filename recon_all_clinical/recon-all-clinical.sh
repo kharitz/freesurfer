@@ -193,7 +193,7 @@ echo " " |& tee -a $LogFile
 ############
 
 # Initial mri_convert
-set cmd="mri_convert $INPUT_SCAN $SUBJECTS_DIR/$SNAME/mri/native.mgz"
+set cmd="mri_convert $INPUT_SCAN $SUBJECTS_DIR/$SNAME/mri/native.mgz -odt float"
 $cmd |& tee -a $LogFile
 if ($status) then
   echo "Error in mri_convert" |& tee -a $LogFile
