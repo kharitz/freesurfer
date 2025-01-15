@@ -197,7 +197,8 @@ SOURCES += \
     vtkInteractorStyleMyTrackballCamera.cxx \
     FlowLayout.cpp \
     WindowLayerInfo.cpp \
-    DialogScreenshotOverlay.cpp
+    DialogScreenshotOverlay.cpp \
+    LayerEditRef.cpp
 
 HEADERS  += \
     Annotation2D.h \
@@ -383,7 +384,8 @@ HEADERS  += \
     vtkInteractorStyleMyTrackballCamera.h \
     FlowLayout.h \
     WindowLayerInfo.h \
-    DialogScreenshotOverlay.h
+    DialogScreenshotOverlay.h \
+    LayerEditRef.h
 
 FORMS    += MainWindow.ui \
     DialogControlPointComment.ui \

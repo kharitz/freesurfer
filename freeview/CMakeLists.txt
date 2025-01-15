@@ -206,6 +206,7 @@ if(BUILD_GUIS AND VTK_FOUND AND TARGET vtkutils)
     DialogSaveAllVolumes.cpp
     ToolWindowLesionPopup.cpp
     DialogLoadODF.cpp
+    LayerEditRef.cpp
     freeview.qrc
   )
 
