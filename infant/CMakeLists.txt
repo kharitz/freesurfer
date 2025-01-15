@@ -49,7 +49,7 @@ install(PROGRAMS docker/infant-container-entrypoint.bash DESTINATION bin)
 install(PROGRAMS docker/infant-container-entrypoint-aws.bash DESTINATION bin)
 
 # install external niftyreg binaries
-if(MARTINOS_BUILD)
+#if(MARTINOS_BUILD)
 if(APPLE)
   set(NIFTY_REG_DIR "/autofs/cluster/freesurfer/build/misc/infant/niftyreg-mac")
 else()
@@ -60,11 +60,13 @@ foreach(CMD reg_resample reg_f3d reg_aladin)
   install(PROGRAMS ${NIFTY_REG_DIR}/${CMD} DESTINATION bin)
 endforeach()
 
+# install the model file for skullstripping
+install(FILES infant_synthstrip_01012025.pt DESTINATION average/sscnn_skullstripping)
 # install externally-stored skullstripping models
-foreach(MODEL ax_sscnn.h5 cor_sscnn.h5 sag_sscnn.h5 12600.pt)
-  install(PROGRAMS /autofs/cluster/freesurfer/build/misc/infant/sscnn_skullstripping/${MODEL} DESTINATION average/sscnn_skullstripping)
-endforeach()
-endif()
+#foreach(MODEL ax_sscnn.h5 cor_sscnn.h5 sag_sscnn.h5 12600.pt)
+#  install(PROGRAMS /autofs/cluster/freesurfer/build/misc/infant/sscnn_skullstripping/${MODEL} #DESTINATION average/sscnn_skullstripping)
+#endforeach()
+#endif()
 
 # install any package requirements
 #if(INSTALL_PYTHON_DEPENDENCIES)
