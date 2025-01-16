@@ -25,6 +25,7 @@
 #include <QColor>
 #include <QList>
 #include <QPointer>
+#include <QVector>
 #include "vtkSmartPointer.h"
 #include "vtkPoints.h"
 
