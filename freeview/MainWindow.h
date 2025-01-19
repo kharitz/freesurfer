@@ -238,6 +238,8 @@ public:
 
   bool GetNeurologicalView();
 
+  void SetEditRefPoint(LayerMRI* mri, double* ras);
+
 Q_SIGNALS:
   void MainViewChanged( int n );
   void ViewLayoutChanged( int n );

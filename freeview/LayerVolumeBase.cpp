@@ -1501,3 +1501,27 @@ void LayerVolumeBase::DoneShifting()
 {
 
 }
+
+void LayerVolumeBase::WorldToVoxelIndex(double *pos_in, int *n_out)
+{
+  double* origin = m_imageData->GetOrigin();
+  double* voxel_size = m_imageData->GetSpacing();
+  int dim[3];
+  m_imageData->GetDimensions( dim );
+  for ( int i = 0; i < 3; i++ )
+  {
+    n_out[i] = ( int )( ( pos_in[i] - origin[i] ) / voxel_size[i] + 0.5 );
+  }
+}
+
+void LayerVolumeBase::VoxelIndexToWorld(int *n_in, double *pos_out)
+{
+  double* origin = m_imageData->GetOrigin();
+  double* voxel_size = m_imageData->GetSpacing();
+  int dim[3];
+  m_imageData->GetDimensions( dim );
+  for ( int i = 0; i < 3; i++ )
+  {
+    pos_out[i] = n_in[i]*voxel_size[i] + origin[i];
+  }
+}

@@ -57,6 +57,7 @@
 #include "LayerPropertyPointSet.h"
 #include <QInputDialog>
 #include "DialogMovePoint.h"
+#include "LayerEditRef.h"
 
 RenderView2D::RenderView2D( QWidget* parent ) : RenderView( parent )
 {
@@ -743,6 +744,21 @@ void RenderView2D::TriggerContextMenu( QMouseEvent* event )
         menu.exec(event->globalPos());
         return;
       }
+    }
+  }
+  else if (mainwnd->GetMode() == RenderView::IM_VoxelEdit)
+  {
+    LayerEditRef* ref = (LayerEditRef*)mainwnd->GetSupplementLayer("EditRef");
+    if (ref && ref->GetNumberOfMarks() > 0)
+    {
+      QAction* act;
+      act = new QAction("Apply to Edit", this);
+      connect(act, SIGNAL(triggered()), ref, SLOT(ApplyToMRI()));
+      menu.addAction(act);
+      act = new QAction("Clear Marks", this);
+      connect(act, SIGNAL(triggered()), ref, SLOT(Reset()));
+      menu.addAction(act);
+      menu.addSeparator();
     }
   }
 

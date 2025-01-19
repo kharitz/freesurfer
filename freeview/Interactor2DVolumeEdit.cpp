@@ -231,6 +231,10 @@ bool Interactor2DVolumeEdit::ProcessMouseDownEvent( QMouseEvent* event, RenderVi
             mri->SaveForUndo( bFill3D ? -1 : view->GetViewPlane());
             mri->FloodFillByRAS( ras, view->GetViewPlane(), bCondition, bFill3D );
           }
+          else if ( event->modifiers() & Qt::AltModifier )
+          {
+            MainWindow::GetMainWindow()->SetEditRefPoint((LayerMRI*)mri, ras);
+          }
           else
           {
             mri->SaveForUndo( view->GetViewPlane() );
