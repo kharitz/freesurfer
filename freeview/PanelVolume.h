@@ -93,6 +93,7 @@ protected slots:
   void OnSliderTrackVolumeMin(int);
   void OnTrackVolumeThresholdChanged();
   void OnLockLayer(bool);
+  void OnSetShowAsContour(bool);
 
   void UpdateColorLabel();
   void UpdateTrackVolumeThreshold();
