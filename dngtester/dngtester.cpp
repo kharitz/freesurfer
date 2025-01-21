@@ -2101,7 +2101,8 @@ public:
   //MRI *t1=NULL;
   double AqPostLim=1e6,AqAntLim=-1e6,AqInfLim=1e6,AqSupLim=-1e6; // ras
   std::vector<int> bsCorner1={10000,10000,10000}, bsCorner2{-1,-1,-1}; // vox bounding box for brainstem
-  double t1thresh = 0.8;
+  MRI *t1=NULL;
+  double t1thresh = 0.9;
   int AcqueductSeg(void);
 //  MRI *acqeduct=NULL;
 };
@@ -2130,6 +2131,9 @@ int RapheSeg::AcqueductSeg(void)
     MRI *tmp = MRIresample(aseg, rastemplate, SAMPLE_NEAREST);
     MRIfree(&aseg);
     aseg = tmp;
+    tmp = MRIresample(t1, rastemplate, SAMPLE_NEAREST);
+    MRIfree(&t1);
+    t1 = tmp;
     MRIfree(&rastemplate);
   }
 
@@ -2146,12 +2150,22 @@ int RapheSeg::AcqueductSeg(void)
   aseg0->ct = CTABdeepCopy(aseg->ct);
 
   // Get extent limits of 4th vent (and brainstem while there)
+  std::vector <std::vector<int>> v3crs;
   int V4APmin=aseg->height,V4APmax=0,V4SImin=aseg->depth,V4SImax=0; // vox
-  int nbs=0, nv4=0;
+  int nbs=0, nv4=0, nbs0=0;
+  double t1bssum=0;
   for(int c=0; c < aseg->width; c++){
     for(int r=0; r < aseg->height; r++){
       for(int s=0; s < aseg->depth; s++){
 	int segid = MRIgetVoxVal(aseg,c,r,s,0);
+	if(segid == 14){
+	  std::vector<int> crs = {c,r,s};
+	  v3crs.push_back(crs);
+	}
+	if(segid == 16){
+	  t1bssum += MRIgetVoxVal(t1,c,r,s,0);
+	  nbs0++;
+	}
 	if(segid == 16 || segid == 15){
 	  // get vox bounding box for brainstem+4th vent
 	  nbs++;
@@ -2173,11 +2187,16 @@ int RapheSeg::AcqueductSeg(void)
   }
   printf("nv4 = %d, AP=(%d,%d) SI=(%d,%d)\n",nv4,V4APmin,V4APmax,V4SImin,V4SImax);
   printf("BS nbs=%d (%d,%d,%d) (%d,%d,%d)\n",nbs,bsCorner1[0],bsCorner1[1],bsCorner1[2],bsCorner2[0],bsCorner2[1],bsCorner2[2]);
+  printf("nv3 %d\n",(int)v3crs.size());
+  double t1bsmn = t1bssum/nbs0;
+  printf("nbs0 = %d, t1bmn = %g\n",nbs0,t1bsmn);
 
   // Starting at the most superior slice. Examine each slice to see
   // where the acqueduct is not totally surrounded by brainstem.
   int naqtot=0;
   int aqfound=0;
+  std::vector <std::vector<int>> aqcrs;
+  double t1aqsum=0;
   for(int s=V4SImax; s >= V4SImin; s--){
     // Get single slice binarizerd to non-brainstem. The 4thvent/aqd
     // will show up as an island
@@ -2203,8 +2222,11 @@ int RapheSeg::AcqueductSeg(void)
 	  int segid = MRIgetVoxVal(aseg,vc->col[n],vc->row[n],s,0);
 	  if(segid != 15 && segid != 16) continue;
 	  MRIsetVoxVal(aseg, vc->col[n], vc->row[n], s, 0, 540); // acqueduct
+	  std::vector<int> crs = {vc->col[n],vc->row[n],s};
+	  aqcrs.push_back(crs);
 	  aqfound = 1;
 	  naqtot++;
+	  t1aqsum += MRIgetVoxVal(t1, vc->col[n], vc->row[n], s, 0);
 	}
       }
     }
@@ -2222,21 +2244,88 @@ int RapheSeg::AcqueductSeg(void)
 	  MRIsetVoxVal(aseg,c,r,s,0,540);
 	  nv4++;
 	  naqtot++;
+	  std::vector<int> crs = {c,r,s};
+	  aqcrs.push_back(crs);
+	  t1aqsum += MRIgetVoxVal(t1,c,r,s,0);
 	}
       }
     }
-    printf("s=%d nnotbs=%d nc=%d nbs=%d aqfound=%d nv4r=%d naqtot=%d\n",s,nv4,nClusters,nbs,aqfound,nv4,naqtot);
+    printf("s=%d nnotbs=%d nc=%d aqfound=%d nv4r=%d naqtot=%d\n",
+	   s,nv4,nClusters,aqfound,nv4,naqtot);
     if(aqfound && nClusters <= 1) break;
+  }
+  double t1aqmn = t1aqsum/naqtot;
+
+  // Often times the V4 seg does not properly label the aqueduct all
+  // the way up to the 3rd ventricle. Below is a refinement to fill in
+  // this gap.
+  // Find the two closest points between v3 and aq
+  double d2min=10e10;
+  int nmin=-1, mmin=-1;
+  for(int n=0; n < aqcrs.size(); n++){
+    for(int m=0; m < v3crs.size(); m++){
+      double d2 = 0;
+      for(int k=0; k<3; k++){
+	double d = aqcrs[n][k]-v3crs[m][k];
+	d2 += (d*d);
+      }
+      if(d2 < d2min){
+	d2min = d2;
+	nmin = n;
+	mmin = m;
+      }
+    }
+  }
+  double dmin = sqrt(d2min);
+
+  //MRIwrite(aseg,"dng.ras.mgz");
+
+  // Relabel BS voxels on the line between the two closest
+  // points. Examine the t1 intensity around each point and relabel if
+  // it is dark enough.  This a little bit of a hack, but it should be
+  // good enough for the raphe project.
+  double dc = (v3crs[mmin][0] - aqcrs[nmin][0])/dmin;
+  double dr = (v3crs[mmin][1] - aqcrs[nmin][1])/dmin;
+  double ds = (v3crs[mmin][2] - aqcrs[nmin][2])/dmin;
+  printf("Aq-V3: %g  (%d,%d,%d)  (%d,%d,%d) (%g,%g,%g) t1aqmn=%g \n",dmin,
+	 aqcrs[nmin][0],aqcrs[nmin][1],aqcrs[nmin][2],
+	 v3crs[mmin][0],v3crs[mmin][1],v3crs[mmin][2],dc,dr,ds,t1aqmn);
+  int nrecode=0;
+  for(double d=0; d < dmin; d += dmin/100){
+    int c = round(aqcrs[nmin][0] + dc*d);
+    int r = round(aqcrs[nmin][1] + dr*d);
+    int s = round(aqcrs[nmin][2] + ds*d);
+    int segid = MRIgetVoxVal(aseg,c,r,s,0);    
+    if(segid != 16) continue;
+    if(segid == 540) continue; // already set
+    MRIsetVoxVal(aseg,c,r,s,0,540);
+    naqtot++;
+    // look at in-plane adjacent. Relabel if dark enough
+    for(int ac = -1; ac < 2; ac++){
+      for(int ar = -1; ar < 2; ar++){
+	if(abs(ac)+abs(ar) > 1) continue;// face neighbors 
+	int nnsegid = MRIgetVoxVal(aseg,c+ac,r+ar,s,0);    
+	double t1val = MRIgetVoxVal(t1,c+ac,r+ar,s,0);
+	if(nnsegid != 16 || nnsegid == 540) continue;
+	if(t1val > (t1bsmn-t1aqmn)*t1thresh + t1aqmn) continue;
+	MRIsetVoxVal(aseg,c+ac,r+ar,s,0,540);
+	naqtot++;
+	nrecode++;
+	printf("recode %d %d %g %g %g %g\n",nrecode,nnsegid,t1val,t1bsmn,t1aqmn,(t1bsmn-t1aqmn)*t1thresh+t1aqmn);
+      }
+    }
   }
 
   if(strcmp(ostr,"RAS")){
-    printf("Reorientating back to %s\n",ostr);
+    printf("Reorientating baqk to %s\n",ostr);
     MRI *tmp = MRIresample(aseg, aseg0, SAMPLE_NEAREST);
     MRIfree(&aseg);
     aseg = tmp;
     aseg->ct = CTABdeepCopy(aseg0->ct);
+    // reorient t1?
   }
-  printf("#AQ# Found %d acqueduct voxels = %g mm3\n",naqtot,naqtot*aseg->xsize*aseg->ysize*aseg->zsize);
+  printf("#AQ# Found %d aqueduct voxels = %g mm3\n",
+	 naqtot,naqtot*aseg->xsize*aseg->ysize*aseg->zsize);
 
   return(0);
 }
@@ -2252,8 +2341,9 @@ int main(int argc, char **argv)
 
   RapheSeg rs;
   rs.aseg = MRIread(argv[1]); // aseg
+  rs.t1 = MRIread(argv[2]); // t1
   rs.AcqueductSeg();
-  MRIwrite(rs.aseg,argv[2]);
+  MRIwrite(rs.aseg,argv[3]);
   //MRI *dasb = MRIread(argv[2]);
   //MRI *segaq = MRIaseg2acqueduct(mri);
   //MRIsegRaphe(segaq,dasb);
