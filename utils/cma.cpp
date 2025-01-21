@@ -29,6 +29,7 @@
 #include "fio.h"
 #include "gtm.h"
 #include "mrisutils.h"
+#include "volcluster.h"
 
 /* see ch notebook 2 */
 
@@ -2155,5 +2156,236 @@ MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist, int Force1)
   }
   return(ohe);
 }
+
+/*!
+  \fn MRI *MRIaqueductSeg(MRI *asegA, MRI *t1A, double t1thresh)
+  \brief Segments the cerebral acqueduct from an aseg with brainstem,
+  4th vent, and 3rd vent. Relables the aqueduct part 4th vent and then
+  finds dark voxels in the line between the aqueduct and 3rd vent. The
+  return seg is the same as the input but with acqueduct=540 labeled.
+  Recommend using synthseg. This was programmed for the raphe project
+  and has not been fully evaluated.
+*/
+MRI *MRIaqueductSeg(MRI *asegA, MRI *t1A, double t1thresh)
+{
+  int err = MRIdimMismatch(asegA, t1A, 0);
+  if(err) {
+    printf("ERROR: MRIaqueductSeg(): dimension mismatch\n");
+    return (NULL);
+  }
+
+  // Make a copy so that they can be reoriented if needed
+  MRI *aseg = MRIcopy(asegA,NULL);
+  MRI *t1 = MRIcopy(t1A,NULL);
+
+  if(aseg->type == MRI_UCHAR){
+    printf("Changing aseg type from uchar to int\n");
+    MRI *tmp = MRISeqchangeType(aseg, MRI_INT, 0.0, 0.999, 1);
+    MRIfree(&aseg);
+    aseg = tmp;
+  }
+
+  // Reorient to RAS
+  char ostr[5];
+  ostr[4] = '\0';
+  MRIdircosToOrientationString(aseg,ostr);
+  printf("Orientation %s\n",ostr);
+  if(strcmp(ostr,"RAS")){
+    printf("Reorientating to RAS\n");
+    MRI *rastemplate = MRIcopy(aseg,NULL);
+    MRIorientationStringToDircos(rastemplate, "RAS");
+    MRI *tmp = MRIresample(aseg, rastemplate, SAMPLE_NEAREST);
+    MRIfree(&aseg);
+    aseg = tmp;
+    tmp = MRIresample(t1, rastemplate, SAMPLE_NEAREST);
+    MRIfree(&t1);
+    t1 = tmp;
+    MRIfree(&rastemplate);
+  }
+
+  // Get extent limits of 4th vent
+  std::vector <std::vector<int>> v3crs;
+  int V4APmin=aseg->height,V4APmax=0,V4SImin=aseg->depth,V4SImax=0; // vox
+  int nv4=0, nbs0=0; //nbs=0, 
+  double t1bssum=0;
+  for(int c=0; c < aseg->width; c++){
+    for(int r=0; r < aseg->height; r++){
+      for(int s=0; s < aseg->depth; s++){
+	int segid = MRIgetVoxVal(aseg,c,r,s,0);
+	if(segid == 14){
+	  // Get coords of the 3rd vent
+	  std::vector<int> crs = {c,r,s};
+	  v3crs.push_back(crs);
+	}
+	if(segid == 16){
+	  // Get the intensity in brainstem (for thresholding later)
+	  //t1bssum += MRIgetVoxVal(t1,c,r,s,0);
+	  nbs0++;
+	}
+	//if(segid == 16 || segid == 15) nbs++;
+	if(segid != 15) continue; //not 4th vent
+	nv4++;
+	if(V4APmin > r) V4APmin = r;
+	if(V4APmax < r) V4APmax = r;
+	if(V4SImin > s) V4SImin = s;
+	if(V4SImax < s) V4SImax = s;
+      }
+    }
+  }
+  printf("nv4 = %d, AP=(%d,%d) SI=(%d,%d)\n",nv4,V4APmin,V4APmax,V4SImin,V4SImax);
+  printf("nv3 %d\n",(int)v3crs.size());
+  double t1bsmn = t1bssum/nbs0;
+  printf("nbs0 = %d, t1bmn = %g\n",nbs0,t1bsmn);
+
+  // Starting at the most superior slice. Examine each slice to see
+  // where the aqueduct is not totally surrounded by brainstem.
+  int naqtot=0;
+  int aqfound=0;
+  std::vector <std::vector<int>> aqcrs;
+  double t1aqsum=0;
+  for(int s=V4SImax; s >= V4SImin; s--){
+    // Get single slice binarizerd to non-brainstem. The 4thvent/aqueduct
+    // will show up as an island
+    MRI *slice = MRIalloc(aseg->width,aseg->height,1,MRI_INT);
+    int nnotbs = 0;
+    for(int c=0; c < aseg->width; c++){
+      for(int r=0; r < aseg->height; r++){
+	int segid = MRIgetVoxVal(aseg,c,r,s,0);
+	int val=1; // not brainstem
+	if(segid == 16) val=0; // keep as brainstem
+	if(val) nnotbs++;
+	MRIsetVoxVal(slice,c,r,0,0,val);
+      }
+    }
+    // Clusterize. Should only be 1 or 2 clusters. What happens if 3?
+    int nClusters;
+    VOLCLUSTER **ClusterList = clustGetClusters(slice, 0, 0.5, 0, 0, 0, NULL, &nClusters, NULL);
+    if(nClusters > 1){
+      // Look through all the clusters and relable the 4th vent voxels as aqueduct
+      for(int cno = 1; cno < nClusters; cno++){
+	VOLCLUSTER *vc = ClusterList[cno];
+	for(int n = 0; n < vc->nmembers; n++){
+	  int segid = MRIgetVoxVal(aseg,vc->col[n],vc->row[n],s,0);
+	  if(segid != 15 && segid != 16) continue;
+	  MRIsetVoxVal(aseg, vc->col[n], vc->row[n], s, 0, 540); // aqueduct
+	  std::vector<int> crs = {vc->col[n],vc->row[n],s};
+	  aqcrs.push_back(crs);
+	  aqfound = 1;
+	  naqtot++;
+	  t1aqsum += MRIgetVoxVal(t1, vc->col[n], vc->row[n], s, 0);
+	}
+      }
+    }
+    MRIfree(&slice);
+    clustFreeClusterList(&ClusterList, nClusters);
+    int nv4 = 0;
+    if(!aqfound){
+      // No closed v4 voxels found yet. This might happen at the top
+      // of the aqueduct where it joins the 3rd vent, so label v4
+      // voxels as aqueduct (prevents disjointed aq seg)
+      for(int c=0; c < aseg->width; c++){
+	for(int r=0; r < aseg->height; r++){
+	  int segid = MRIgetVoxVal(aseg,c,r,s,0);
+	  if(segid != 15) continue; // not v4
+	  MRIsetVoxVal(aseg,c,r,s,0,540);
+	  nv4++;
+	  naqtot++;
+	  std::vector<int> crs = {c,r,s};
+	  aqcrs.push_back(crs);
+	  t1aqsum += MRIgetVoxVal(t1,c,r,s,0);
+	}
+      }
+    }
+    printf("s=%d nnotbs=%d nc=%d aqfound=%d nv4r=%d naqtot=%d\n",
+	   s,nv4,nClusters,aqfound,nv4,naqtot);
+    if(aqfound && nClusters <= 1) break;
+  }
+  double t1aqmn = t1aqsum/naqtot;
+
+  // Often times the V4 seg does not properly label the aqueduct all
+  // the way up to the 3rd ventricle. Below is a refinement to fill in
+  // this gap.
+  // Find the two closest voxels between v3 and aq (should use RAS instead of VOX)
+  double d2min=10e10;
+  int nmin=-1, mmin=-1;
+  for(int n=0; n < aqcrs.size(); n++){
+    for(int m=0; m < v3crs.size(); m++){
+      double d2 = 0;
+      for(int k=0; k<3; k++){
+	double d = aqcrs[n][k]-v3crs[m][k];
+	d2 += (d*d);
+      }
+      if(d2 < d2min){
+	d2min = d2;
+	nmin = n;
+	mmin = m;
+      }
+    }
+  }
+  double dmin = sqrt(d2min);
+
+  // Relabel BS voxels on the line between the two closest points. The
+  // V4 label needs to be fairly good to make this work (synthseg does
+  // a good job).  Examine the t1 intensity around each point and
+  // relabel if it is dark enough.  This a little bit of a hack, but
+  // it should be good enough for the raphe project. Results look
+  // good.
+  double dc = (v3crs[mmin][0] - aqcrs[nmin][0])/dmin;
+  double dr = (v3crs[mmin][1] - aqcrs[nmin][1])/dmin;
+  double ds = (v3crs[mmin][2] - aqcrs[nmin][2])/dmin;
+  printf("Aq-V3: %g  (%d,%d,%d)  (%d,%d,%d) (%g,%g,%g) t1aqmn=%g \n",dmin,
+	 aqcrs[nmin][0],aqcrs[nmin][1],aqcrs[nmin][2],
+	 v3crs[mmin][0],v3crs[mmin][1],v3crs[mmin][2],dc,dr,ds,t1aqmn);
+  int nrecode=0;
+  for(double d=0; d < dmin; d += dmin/100){
+    // Step in the direction from the aq to the 3rd vent
+    int c = round(aqcrs[nmin][0] + dc*d);
+    int r = round(aqcrs[nmin][1] + dr*d);
+    int s = round(aqcrs[nmin][2] + ds*d);
+    int segid = MRIgetVoxVal(aseg,c,r,s,0);    
+    if(segid != 16) continue; // not brainstem
+    if(segid == 540) continue; // already set
+    MRIsetVoxVal(aseg,c,r,s,0,540);
+    naqtot++;
+    // Look at in-plane adjacent. Relabel if dark enough
+    for(int ac = -1; ac < 2; ac++){
+      for(int ar = -1; ar < 2; ar++){
+	if(abs(ac)+abs(ar) > 1) continue;// face neighbors 
+	int nnsegid = MRIgetVoxVal(aseg,c+ac,r+ar,s,0);    
+	double t1val = MRIgetVoxVal(t1,c+ac,r+ar,s,0);
+	if(nnsegid != 16 || nnsegid == 540) continue;
+	if(t1val > (t1bsmn-t1aqmn)*t1thresh + t1aqmn) continue;
+	MRIsetVoxVal(aseg,c+ac,r+ar,s,0,540);
+	naqtot++;
+	nrecode++;
+	printf("recode %d %d %g %g %g %g\n",nrecode,nnsegid,t1val,t1bsmn,t1aqmn,(t1bsmn-t1aqmn)*t1thresh+t1aqmn);
+      }
+    }
+  }
+  
+  if(strcmp(ostr,"RAS")){
+    printf("Reorientating back to %s\n",ostr);
+    MRI *tmp = MRIresample(aseg, asegA, SAMPLE_NEAREST);
+    MRIfree(&aseg);
+    aseg = tmp;
+  }
+  // Update the ctab
+  if(!aseg->ct) aseg->ct = CTABreadDefault();
+  CTE *cte = aseg->ct->entries[540];
+  if(cte == NULL) {
+    cte = (CTE *)malloc(sizeof(CTE));
+    aseg->ct->entries[540] = cte;
+  }
+  strcpy(cte->name,"Cerebral-Aqueduct");
+  cte->ri=170; cte->gi=85; cte->bi=255; cte->ai=0;
+  cte->rf=170/255.0; cte->gf=85/255.0; cte->bf=255/255.0;
+
+  printf("#AQ# Found %d aqueduct voxels = %g mm3 thresh = %g\n",
+	 naqtot,naqtot*aseg->xsize*aseg->ysize*aseg->zsize,t1thresh);
+
+  MRIfree(&t1);
+  return(aseg);
+}
+
 
 /* eof */
