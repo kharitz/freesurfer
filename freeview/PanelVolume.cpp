@@ -284,7 +284,7 @@ void PanelVolume::ConnectLayer( Layer* layer_in )
   connect( p, SIGNAL(OpacityChanged(double)), this, SLOT(UpdateOpacity(double)), Qt::UniqueConnection);
   connect( ui->doubleSpinBoxOpacity, SIGNAL(valueChanged(double)), p, SLOT(SetOpacity(double)) );
   connect( ui->checkBoxSmooth, SIGNAL(stateChanged(int)), p, SLOT(SetTextureSmoothing(int)) );
-  connect( ui->checkBoxShowContour, SIGNAL(clicked(bool)), p, SLOT(SetShowAsContour(bool)) );
+  connect( ui->checkBoxShowContour, SIGNAL(clicked(bool)), this, SLOT(OnSetShowAsContour(bool)) );
   connect( ui->checkBoxShowLabelContour, SIGNAL(clicked(bool)), p, SLOT(SetShowAsLabelContour(bool)) );
   connect( ui->sliderFrame, SIGNAL(valueChanged(int)), layer, SLOT(SetActiveFrame(int)) );
   connect( ui->spinBoxFrame, SIGNAL(valueChanged(int)), layer, SLOT(SetActiveFrame(int)) );
@@ -2148,6 +2148,23 @@ void PanelVolume::OnCheckBoxSetOffsetToMean(bool b)
     if ( layer )
     {
       layer->GetProperty()->SetHeatScaleOffset(layer->GetProperty()->GetFrameMeanValue());
+    }
+  }
+}
+
+void PanelVolume::OnSetShowAsContour(bool b)
+{
+  QList<LayerMRI*> layers = GetSelectedLayers<LayerMRI*>();
+  foreach (LayerMRI* layer, layers)
+  {
+    if ( layer )
+    {
+      layer->GetProperty()->SetShowAsContour(b);
+      if (b && layer == GetCurrentLayer<LayerMRI*>() &&
+          layer->GetProperty()->GetColorMap() == LayerPropertyMRI::Heat)
+      {
+        UpdateWidgets();
+      }
     }
   }
 }

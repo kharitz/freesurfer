@@ -139,7 +139,7 @@ LayerPropertyMRI::LayerPropertyMRI (QObject* parent) : LayerProperty( parent ),
   connect( this, SIGNAL(ContourSmoothIterationChanged(int)), this, SIGNAL(PropertyChanged()) );
   connect( this, SIGNAL(DisplayModeChanged()), this, SIGNAL(PropertyChanged()) );
   connect( this, SIGNAL(LabelOutlineChanged(bool)), this, SIGNAL(PropertyChanged()) );
-//  connect( this, SIGNAL(OpacityChanged(double)), this, SIGNAL(PropertyChanged()) );
+  //  connect( this, SIGNAL(OpacityChanged(double)), this, SIGNAL(PropertyChanged()) );
   connect( this, SIGNAL(ResliceInterpolationChanged()), this, SIGNAL(PropertyChanged()) );
   connect( this, SIGNAL(TextureSmoothingChanged()), this, SIGNAL(PropertyChanged()) );
   connect( this, SIGNAL(UpSampleMethodChanged(int)), this, SIGNAL(PropertyChanged()) );
@@ -233,7 +233,7 @@ void LayerPropertyMRI::RestoreSettings( const QString& filename )
 void LayerPropertyMRI::RestoreSettings(const QVariantMap& map)
 {
   LayerMRI* mri = qobject_cast<LayerMRI*>(parent());
-//  m_bUsePercentile = (map["UsePercentile"].toDouble() > 0);
+  //  m_bUsePercentile = (map["UsePercentile"].toDouble() > 0);
   if ( map.contains("MinGrayscaleWindow") )
   {
     mMinGrayscaleWindow = map["MinGrayscaleWindow"].toDouble();
@@ -465,39 +465,39 @@ QVariantMap LayerPropertyMRI::GetActiveSettings()
   switch (mColorMapType)
   {
   case Grayscale:
-    map["MinGrayscaleWindow"] = mMinGrayscaleWindow;
-    map["MaxGrayscaleWindow"] = mMaxGrayscaleWindow;
-    if (m_bUsePercentile)
-    {
-      map["MinGrayscaleWindowInPercentile"] = mri->GetHistoPercentileFromValue(mMinGrayscaleWindow);
-      map["MaxGrayscaleWindowInPercentile"] = mri->GetHistoPercentileFromValue(mMaxGrayscaleWindow);
-    }
-    break;
+  map["MinGrayscaleWindow"] = mMinGrayscaleWindow;
+  map["MaxGrayscaleWindow"] = mMaxGrayscaleWindow;
+  if (m_bUsePercentile)
+  {
+    map["MinGrayscaleWindowInPercentile"] = mri->GetHistoPercentileFromValue(mMinGrayscaleWindow);
+    map["MaxGrayscaleWindowInPercentile"] = mri->GetHistoPercentileFromValue(mMaxGrayscaleWindow);
+  }
+  break;
   case Heat:
-    map["HeatScaleMinThreshold"] = mHeatScaleMinThreshold;
-    map["HeatScaleMidThreshold"] = mHeatScaleMidThreshold;
-    map["HeatScaleMaxThreshold"] = mHeatScaleMaxThreshold;
-    map["HeatScaleOffset"] = mHeatScaleOffset;
-    if (m_bUsePercentile)
-    {
-      map["HeatScaleMinThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMinThreshold);
-      map["HeatScaleMidThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMidThreshold);
-      map["HeatScaleMaxThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMaxThreshold);
-    }
-    break;
+  map["HeatScaleMinThreshold"] = mHeatScaleMinThreshold;
+  map["HeatScaleMidThreshold"] = mHeatScaleMidThreshold;
+  map["HeatScaleMaxThreshold"] = mHeatScaleMaxThreshold;
+  map["HeatScaleOffset"] = mHeatScaleOffset;
+  if (m_bUsePercentile)
+  {
+    map["HeatScaleMinThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMinThreshold);
+    map["HeatScaleMidThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMidThreshold);
+    map["HeatScaleMaxThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mHeatScaleMaxThreshold);
+  }
+  break;
   case Jet:
   case Turbo:
   case GEColor:
   case NIH:
   case PET:
-    map["MinGenericThreshold"] = mMinGenericThreshold;
-    map["MaxGenericThreshold"] = mMaxGenericThreshold;
-    if (m_bUsePercentile)
-    {
-      map["MinGenericThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mMinGenericThreshold);
-      map["MaxGenericThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mMaxGenericThreshold);
-    }
-    break;
+  map["MinGenericThreshold"] = mMinGenericThreshold;
+  map["MaxGenericThreshold"] = mMaxGenericThreshold;
+  if (m_bUsePercentile)
+  {
+    map["MinGenericThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mMinGenericThreshold);
+    map["MaxGenericThresholdInPercentile"] = mri->GetHistoPercentileFromValue(mMaxGenericThreshold);
+  }
+  break;
   }
   if (this->GetShowAsContour())
   {
@@ -538,19 +538,19 @@ vtkScalarsToColors* LayerPropertyMRI::GetActiveLookupTable()
   switch ( mColorMapType )
   {
   case NoColorMap:
-    return NULL;
+  return NULL;
   case Grayscale:
-    return mGrayScaleTable;
+  return mGrayScaleTable;
   case Heat:
-    return mHeatScaleTable;
+  return mHeatScaleTable;
   case LUT:
   case Binary:
-    return mLUTTable;
+  return mLUTTable;
   case Hue:
-    return mHueTable;
+  return mHueTable;
   default:
-    return mColorMapTable;
-    break;
+  return mColorMapTable;
+  break;
   }
   return NULL;
 }
@@ -668,148 +668,148 @@ void LayerPropertyMRI::OnColorMapChanged ()
   switch ( mColorMapType )
   {
   case NoColorMap:
-    break;
+  break;
 
   case Grayscale:
-    // Check the color map variables and update range sliders if
-    // necessary.
-    if ( MinGrayscaleWindow < mMinVisibleValue )
-    {
-      mMinVisibleValue = MinGrayscaleWindow;
-    }
-    if ( MaxGrayscaleWindow >= mMaxVisibleValue )
-    {
-      mMaxVisibleValue = MaxGrayscaleWindow+1;
-    }
+  // Check the color map variables and update range sliders if
+  // necessary.
+  if ( MinGrayscaleWindow < mMinVisibleValue )
+  {
+    mMinVisibleValue = MinGrayscaleWindow;
+  }
+  if ( MaxGrayscaleWindow >= mMaxVisibleValue )
+  {
+    mMaxVisibleValue = MaxGrayscaleWindow+1;
+  }
 
-    // Build our lookup table.
-    assert( mGrayScaleTable.GetPointer() );
-    mGrayScaleTable->RemoveAllPoints();
-    if ( mbClearBackground || has_mask )
+  // Build our lookup table.
+  assert( mGrayScaleTable.GetPointer() );
+  mGrayScaleTable->RemoveAllPoints();
+  if ( mbClearBackground || has_mask )
+  {
+    if (mClearBackgroundValue < MinGrayscaleWindow)
     {
-      if (mClearBackgroundValue < MinGrayscaleWindow)
-      {
-        mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue, 0, 0, 0, 0 );
-        mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue + tiny_fraction, 0, 0, 0, 1 );
-        mGrayScaleTable->AddRGBAPoint( MinGrayscaleWindow,    0, 0, 0, 1 );
-      }
-      else
-      {
-        mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue, 0, 0, 0, 0 );
-        double val = (mClearBackgroundValue-mMinGrayscaleWindow) /
-            (mMaxGrayscaleWindow == mMinGrayscaleWindow ? 1:(mMaxGrayscaleWindow - mMinGrayscaleWindow));
-        mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue + tiny_fraction, val, val, val, 1 );
-      }
+      mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue, 0, 0, 0, 0 );
+      mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue + tiny_fraction, 0, 0, 0, 1 );
+      mGrayScaleTable->AddRGBAPoint( MinGrayscaleWindow,    0, 0, 0, 1 );
     }
     else
     {
-      mGrayScaleTable->AddRGBAPoint( mMinVisibleValue - tiny_fraction, 0, 0, 0, 0 );
-      mGrayScaleTable->AddRGBAPoint( mMinVisibleValue,       0, 0, 0, 1 );
-      mGrayScaleTable->AddRGBAPoint( MinGrayscaleWindow,
-                                     0, 0, 0, 1 );
+      mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue, 0, 0, 0, 0 );
+      double val = (mClearBackgroundValue-mMinGrayscaleWindow) /
+          (mMaxGrayscaleWindow == mMinGrayscaleWindow ? 1:(mMaxGrayscaleWindow - mMinGrayscaleWindow));
+      mGrayScaleTable->AddRGBAPoint( mClearBackgroundValue + tiny_fraction, val, val, val, 1 );
     }
-    mGrayScaleTable->AddRGBAPoint( MaxGrayscaleWindow,    1, 1, 1, 1 );
-    mGrayScaleTable->AddRGBAPoint( mMaxVisibleValue,       1, 1, 1, 1 );
-//    mGrayScaleTable->AddRGBAPoint( mMaxVisibleValue + tiny_fraction, 1, 1, 1, 0 );
-    mGrayScaleTable->Build();
-    break;
+  }
+  else
+  {
+    mGrayScaleTable->AddRGBAPoint( mMinVisibleValue - tiny_fraction, 0, 0, 0, 0 );
+    mGrayScaleTable->AddRGBAPoint( mMinVisibleValue,       0, 0, 0, 1 );
+    mGrayScaleTable->AddRGBAPoint( MinGrayscaleWindow,
+                                   0, 0, 0, 1 );
+  }
+  mGrayScaleTable->AddRGBAPoint( MaxGrayscaleWindow,    1, 1, 1, 1 );
+  mGrayScaleTable->AddRGBAPoint( mMaxVisibleValue,       1, 1, 1, 1 );
+  //    mGrayScaleTable->AddRGBAPoint( mMaxVisibleValue + tiny_fraction, 1, 1, 1, 0 );
+  mGrayScaleTable->Build();
+  break;
 
   case Heat:
-    mHeatScaleTable->RemoveAllPoints();
-    if ( m_bHeatScaleTruncate && m_bHeatScaleInvert )
+  mHeatScaleTable->RemoveAllPoints();
+  if ( m_bHeatScaleTruncate && m_bHeatScaleInvert )
+  {
+    if ( m_bHeatScaleClearHigh || has_mask )
     {
-      if ( m_bHeatScaleClearHigh || has_mask )
-      {
-        mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset - tiny_fraction, 1, 1, 0, 0 );
-      }
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
-//      mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
+      mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset - tiny_fraction, 1, 1, 0, 0 );
     }
-    else if ( m_bHeatScaleTruncate )
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
+    //      mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
+  }
+  else if ( m_bHeatScaleTruncate )
+  {
+    //      mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
+    if ( m_bHeatScaleClearHigh )
     {
-//      mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
-      if ( m_bHeatScaleClearHigh )
-      {
-        mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 1, 1, 0, 0 );
-      }
+      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 1, 1, 0, 0 );
     }
-    else if ( m_bHeatScaleInvert )
+  }
+  else if ( m_bHeatScaleInvert )
+  {
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  0 + mHeatScaleOffset, 0, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 0, 0, 1, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 0, 0, 1, 1 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 0, 1, 1, 1 );
+    if ( m_bHeatScaleClearHigh )
     {
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  0 + mHeatScaleOffset, 0, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 0, 0, 1, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 0, 0, 1, 1 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 0, 1, 1, 1 );
-      if ( m_bHeatScaleClearHigh )
-      {
-        mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 0, 1, 1, 0 );
-      }
+      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 0, 1, 1, 0 );
     }
-    else
+  }
+  else
+  {
+    if ( has_mask )
     {
-      if ( has_mask )
-      {
-        mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold - qAbs(HeatScaleOffset) - tiny_fraction, 0, 0, 0, 0 );
-      }
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 0, 1, 1, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 0, 0, 1, 1 );
-      mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 0, 0, 1, 0 );
-      mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
-      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
-      if ( m_bHeatScaleClearHigh )
-      {
-        mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 1, 1, 0, 0 );
-      }
+      mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold - qAbs(HeatScaleOffset) - tiny_fraction, 0, 0, 0, 0 );
     }
-    mHeatScaleTable->Build();
-    break;
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMaxThreshold + HeatScaleOffset, 0, 1, 1, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMidThreshold + HeatScaleOffset, 0, 0, 1, 1 );
+    mHeatScaleTable->AddRGBAPoint( -HeatScaleMinThreshold + HeatScaleOffset + ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 0, 0, 1, 0 );
+    mHeatScaleTable->AddRGBAPoint(  0 + HeatScaleOffset, 0, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMinThreshold + HeatScaleOffset - ((HeatScaleMinThreshold == HeatScaleMidThreshold)?tiny_fraction:0), 1, 0, 0, 0 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMidThreshold + HeatScaleOffset, 1, 0, 0, 1 );
+    mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset, 1, 1, 0, 1 );
+    if ( m_bHeatScaleClearHigh )
+    {
+      mHeatScaleTable->AddRGBAPoint(  HeatScaleMaxThreshold + HeatScaleOffset + tiny_fraction, 1, 1, 0, 0 );
+    }
+  }
+  mHeatScaleTable->Build();
+  break;
 
   case Jet:
-    mColorMapTable->RemoveAllPoints();
-//    qDebug() << qMin( 0.0, MinGenericThreshold) - tiny_fraction;
-    mColorMapTable->AddRGBAPoint( qMin( 0.0, MinGenericThreshold) - tiny_fraction, 0, 0, 0, 0 );
-    mColorMapTable->AddRGBAPoint( MinGenericThreshold, 0, 0, 1, 1 );
-    mColorMapTable->AddRGBAPoint( MinGenericThreshold + (MaxGenericThreshold - MinGenericThreshold) / 4, 0, 1, 1, 1 );
-    mColorMapTable->AddRGBAPoint( (MinGenericThreshold + MaxGenericThreshold) / 2, 0, 1, 0, 1 );
-    mColorMapTable->AddRGBAPoint( MaxGenericThreshold - (MaxGenericThreshold - MinGenericThreshold) / 4, 1, 1, 0, 1 );
-    mColorMapTable->AddRGBAPoint( MaxGenericThreshold, 1, 0, 0, 1 );
-    //  mColorMapTable->AddRGBAPoint( mMaxGenericThreshold + (mMaxGenericThreshold - mMinJGenericThreshold), 1, 0, 0, 1 );
-    mColorMapTable->Build();
-    break;
+  mColorMapTable->RemoveAllPoints();
+  //    qDebug() << qMin( 0.0, MinGenericThreshold) - tiny_fraction;
+  mColorMapTable->AddRGBAPoint( qMin( 0.0, MinGenericThreshold) - tiny_fraction, 0, 0, 0, 0 );
+  mColorMapTable->AddRGBAPoint( MinGenericThreshold, 0, 0, 1, 1 );
+  mColorMapTable->AddRGBAPoint( MinGenericThreshold + (MaxGenericThreshold - MinGenericThreshold) / 4, 0, 1, 1, 1 );
+  mColorMapTable->AddRGBAPoint( (MinGenericThreshold + MaxGenericThreshold) / 2, 0, 1, 0, 1 );
+  mColorMapTable->AddRGBAPoint( MaxGenericThreshold - (MaxGenericThreshold - MinGenericThreshold) / 4, 1, 1, 0, 1 );
+  mColorMapTable->AddRGBAPoint( MaxGenericThreshold, 1, 0, 0, 1 );
+  //  mColorMapTable->AddRGBAPoint( mMaxGenericThreshold + (mMaxGenericThreshold - mMinJGenericThreshold), 1, 0, 0, 1 );
+  mColorMapTable->Build();
+  break;
 
   case Turbo:
-    BuildGenericLUT( stock_turbo_color );
-    break;
+  BuildGenericLUT( stock_turbo_color );
+  break;
 
   case GEColor:
-    BuildGenericLUT( stock_ge_color );
-    break;
+  BuildGenericLUT( stock_ge_color );
+  break;
 
   case NIH:
-    BuildGenericLUT( stock_nih );
-    break;
+  BuildGenericLUT( stock_nih );
+  break;
 
   case PET:
-    BuildGenericLUT( stock_pet );
-    break;
+  BuildGenericLUT( stock_pet );
+  break;
 
   case LUT:
   case Binary:
-    break;
+  break;
 
   case Hue:
-    break;
+  break;
   default:
-    break;
+  break;
   }
 
   // Notify the layers that use the color map stuff.
@@ -827,9 +827,9 @@ void LayerPropertyMRI::BuildGenericLUT( const int colors[256][3] )
     {
       mColorMapTable->AddRGBAPoint( mMinGenericThreshold + stepsize*i,
                                     colors[i][0]/255.0,
-          colors[i][1]/255.0,
-          colors[i][2]/255.0,
-          1 );
+                                    colors[i][1]/255.0,
+                                    colors[i][2]/255.0,
+                                    1 );
     }
   }
   mColorMapTable->Build();
@@ -1149,8 +1149,8 @@ void LayerPropertyMRI::SetHeatScaleAutoMid(bool bAutoMid)
   if (bAutoMid != m_bHeatScaleAutoMid)
   {
     m_bHeatScaleAutoMid = bAutoMid;
-//    if (!bAutoMid)
-//      m_bHeatScaleSetMidToMin = false;
+    //    if (!bAutoMid)
+    //      m_bHeatScaleSetMidToMin = false;
     if (bAutoMid)
     {
       if (m_bHeatScaleSetMidToMin)
@@ -1195,9 +1195,9 @@ void LayerPropertyMRI::SetHeatScaleMinThreshold( double iValue)
     }
   }
   if (m_bHeatScaleSetMidToMin)
-      mHeatScaleMidThreshold = mHeatScaleMinThreshold;
+    mHeatScaleMidThreshold = mHeatScaleMinThreshold;
   else if (m_bHeatScaleAutoMid)
-      mHeatScaleMidThreshold = (mHeatScaleMinThreshold + mHeatScaleMaxThreshold)/2;
+    mHeatScaleMidThreshold = (mHeatScaleMinThreshold + mHeatScaleMaxThreshold)/2;
   this->OnColorMapChanged();
 }
 
@@ -1488,9 +1488,9 @@ void LayerPropertyMRI::SetVolumeSource ( FSVolume* source )
   // Init our color scale values.
   UpdateMinMaxValues();
 
-//  double dscale = qMax(fabs(mMaxVoxelValue), fabs(mMinVoxelValue));
-//  if (dscale > 0)
-//    m_dVectorDisplayScale = 1/dscale;
+  //  double dscale = qMax(fabs(mMaxVoxelValue), fabs(mMinVoxelValue));
+  //  if (dscale > 0)
+  //    m_dVectorDisplayScale = 1/dscale;
 
   mColorMapTable->ClampingOn();
 
@@ -1529,23 +1529,23 @@ void LayerPropertyMRI::UpdateMinMaxValues()
   if (!mSource)
     return;
 
-//  if (m_bAutoAdjustFrameLevel)
-//  {
-//    if (m_mapMinMaxValues.contains(m_nActiveFrame))
-//    {
-//      QPair<double, double> pair = m_mapMinMaxValues[m_nActiveFrame];
-//      mMinVoxelValue = pair.first;
-//      mMaxVoxelValue = pair.second;
-//    }
-//    else
-//    {
-//      double range[2];
-//      mSource->GetFrameValueRange(m_nActiveFrame, range);
-//      mMinVoxelValue = range[0];
-//      mMaxVoxelValue = range[1];
-//    }
-//  }
-//  else
+  //  if (m_bAutoAdjustFrameLevel)
+  //  {
+  //    if (m_mapMinMaxValues.contains(m_nActiveFrame))
+  //    {
+  //      QPair<double, double> pair = m_mapMinMaxValues[m_nActiveFrame];
+  //      mMinVoxelValue = pair.first;
+  //      mMaxVoxelValue = pair.second;
+  //    }
+  //    else
+  //    {
+  //      double range[2];
+  //      mSource->GetFrameValueRange(m_nActiveFrame, range);
+  //      mMinVoxelValue = range[0];
+  //      mMaxVoxelValue = range[1];
+  //    }
+  //  }
+  //  else
   {
     mMinVoxelValue = mSource->GetMinValue();
     mMaxVoxelValue = mSource->GetMaxValue();
@@ -1704,7 +1704,7 @@ void LayerPropertyMRI::SetMaxGenericThreshold ( double iMax )
     if (map.contains("MaxGenericThreshold"))
       MaxGenericThreshold = map["MaxGenericThreshold"].toDouble();
   }
-  if ( MaxGenericThreshold != iMax )
+  if (MaxGenericThreshold != iMax)
   {
     if (m_bRememberFrameSettings)
     {
@@ -1724,9 +1724,15 @@ void LayerPropertyMRI::SetShowAsContour( bool bContour )
   if ( mbShowAsContour != bContour )
   {
     mbShowAsContour = bContour;
-    if (bContour && GetColorMap() == LUT)
+    int nColorMap = GetColorMap();
+    if (bContour && nColorMap == LUT)
     {
       m_bShowAsLabelContour = true;
+    }
+    if (bContour && nColorMap == Heat)
+    {
+      mMinContourThreshold = mHeatScaleMidThreshold;
+      mMaxContourThreshold = mHeatScaleMaxThreshold;
     }
     emit ContourShown( mbShowAsContour );
   }
@@ -1981,7 +1987,7 @@ void LayerPropertyMRI::SetSelectLabel(int nVal, bool bSelected)
   else if (!bSelected)
     m_listVisibleLabels.removeOne(nVal);
   UpdateLUTTable();
-//  this->OnColorMapChanged();
+  //  this->OnColorMapChanged();
   emit LabelContourChanged(nVal);
 }
 
