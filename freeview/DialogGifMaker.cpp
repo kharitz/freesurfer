@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include "RenderView.h"
 #include "gif.h"
+#include <QMessageBox>
 
 
 DialogGifMaker::DialogGifMaker(QWidget *parent) :
@@ -14,8 +15,7 @@ DialogGifMaker::DialogGifMaker(QWidget *parent) :
   ui(new Ui::DialogGifMaker)
 {
   ui->setupUi(this);
-  this->setWindowFlags( Qt::Tool | Qt::WindowTitleHint |
-                        Qt::WindowCloseButtonHint| Qt::CustomizeWindowHint );
+  this->setWindowFlags( Qt::Tool | Qt::WindowTitleHint | Qt::CustomizeWindowHint );
 
   m_gif = new GifWriter;
   Reset();
@@ -86,4 +86,15 @@ void DialogGifMaker::OnButtonSave()
     Reset();
     hide();
   }
+}
+
+void DialogGifMaker::OnButtonClose()
+{
+  if (m_nNumberOfFrames > 0)
+  {
+    if (QMessageBox::question(this, "Warning", "Current sequence has not been saved. Do you want to close it without saving?",
+                              QMessageBox::No, QMessageBox::Yes) != QMessageBox::Yes)
+      return;
+  }
+  hide();
 }

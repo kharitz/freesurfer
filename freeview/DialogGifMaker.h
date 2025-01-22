@@ -24,6 +24,7 @@ public slots:
     Reset();
   }
   void OnButtonSave();
+  void OnButtonClose();
   void Reset();
 
 private:
