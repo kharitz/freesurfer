@@ -16,6 +16,7 @@ SOURCES += \
     DialogAbout.cpp \
     DialogControlPointComment.cpp \
     DialogCropVolume.cpp \
+    DialogGifMaker.cpp \
     DialogGradientFilter.cpp \
     DialogLoadDTI.cpp \
     DialogLoadODF.cpp \
@@ -211,6 +212,7 @@ HEADERS  += \
     DialogAbout.h \
     DialogControlPointComment.h \
     DialogCropVolume.h \
+    DialogGifMaker.h \
     DialogGradientFilter.h \
     DialogLoadDTI.h \
     DialogLoadODF.h \
@@ -389,6 +391,7 @@ HEADERS  += \
 
 FORMS    += MainWindow.ui \
     DialogControlPointComment.ui \
+    DialogGifMaker.ui \
     DialogLoadODF.ui \
     DialogMovePoint.ui \
     DialogNewAnnotation.ui \

@@ -129,6 +129,7 @@
 #include <QMimeData>
 #include "DialogLoadODF.h"
 #include "LayerEditRef.h"
+#include "DialogGifMaker.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QtWidgets>
@@ -377,6 +378,9 @@ MainWindow::MainWindow( QWidget *parent, MyCmdLineParser* cmdParser ) :
   m_dlgMovePoint->hide();
   for (int i = 0; i < 3; i++)
     connect(m_views[i], SIGNAL(PointSetPicked(LayerPointSet*, int)), m_dlgMovePoint, SLOT(OnPointSetPicked(LayerPointSet*,int)));
+
+  m_dlgSaveGif = new DialogGifMaker(this);
+  m_dlgSaveGif->hide();
 
   QStringList keys = m_layerCollections.keys();
   for ( int i = 0; i < keys.size(); i++ )
@@ -7597,6 +7601,12 @@ void MainWindow::OnCropVolume()
   SetMode( RenderView::IM_VolumeCrop );
   for (int i = 0; i < 4; i++)
     m_views[i]->ResetCameraClippingRange();
+}
+
+void MainWindow::OnSaveGif()
+{
+  m_dlgSaveGif->show();
+  m_dlgSaveGif->raise();
 }
 
 void MainWindow::OnThresholdVolume()
