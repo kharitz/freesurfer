@@ -36,7 +36,7 @@ endif()
 
 install(FILES CNYBCH.yaml DESTINATION average)
 
-install(FILES niftyreg/license.niftyreg.txt DESTINATION docs)
+install_symlinks(niftyreg/license.niftyreg.txt TYPE files DESTINATION docs)
 
 install_append_help(infant_recon_all infant_recon_all.help.xml bin)
 
