@@ -755,7 +755,7 @@ COLOR_TABLE *CTABreadFromBinaryV2(FILE *fp)
   num_entries_to_read = freadInt(fp);
 
   if (Gdiag & DIAG_SHOW)
-    printf("[DEBUG] CTABreadFromBinaryV2(): ct->nentries=%d, num_entries_to_read=%d\n", ct->nentries, num_entries_to_read);
+    printf("[INFO] CTABreadFromBinaryV2(): ct->nentries=%d, num_entries_to_read=%d\n", ct->nentries, num_entries_to_read);
  
   /* For each entry, read in the info. */
   for (i = 0; i < num_entries_to_read; i++) {
@@ -1123,11 +1123,12 @@ COLOR_TABLE *znzCTABreadFromBinaryV2(znzFile fp)
    */
   int toread = (len < STRLEN-1) ? len : STRLEN-1;
   znzread(ct->fname, sizeof(char), toread, fp);
-  if (Gdiag & DIAG_INFO)
-    printf("[DEBUG] znzCTABreadFromBinaryV2(): fname = '%s' (%d bytes)\n", ct->fname, toread); 
 
   /* Read the number of entries to read. */
   num_entries_to_read = znzreadInt(fp);
+  if (Gdiag & DIAG_INFO)
+    printf("[INFO] znzCTABreadFromBinaryV2(): fname = '%s' (%d bytes), ct->nentries=%d, num_entries_to_read=%d\n",
+	   ct->fname, toread, ct->nentries, num_entries_to_read);
 
   /* For each entry, read in the info. */
   for (i = 0; i < num_entries_to_read; i++) {
