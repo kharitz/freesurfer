@@ -23,7 +23,7 @@
 
   mri_segreg
 
-  --init-reg regfile
+  --init-reg regfile (put --s subject after this to override)
   --regheader subject
   --mov fvol
   --out-reg outreg : reg at lowest cost
@@ -1274,6 +1274,12 @@ static int parse_commandline(int argc, char **argv) {
       err = regio_read_register(regfile, &subject, &ipr, &bpr,
                                 &intensity, &R0, &float2int);
       if (err) exit(1);
+      nargsused = 1;
+    } 
+    else if(istringnmatch(option, "--s",0)){
+      if (nargc < 1) argnerr(option,1);
+      subject = pargv[0];
+      nargsused = 1;
       nargsused = 1;
     } 
     else if (!strcasecmp(option, "--regheader")){

@@ -329,6 +329,7 @@ if($DoPass1) then
   set cmd = (mri_segreg --mov $template --init-reg $InitReg --out-reg $Pass1Reg\
     --subsamp-brute $SubSamp1 --subsamp $SubSamp1 --tol 1e-4 --tol1d 1e-3 \
     --brute -$Brute1Max $Brute1Max $Brute1Delta --surf $surfname);
+  if($#subject) set cmd = ($cmd --s $subject) # must be after --init-reg
   if($#GMProjFrac) set cmd = ($cmd --gm-proj-frac $GMProjFrac)
   if($#GMProjAbs)  set cmd = ($cmd --gm-proj-abs  $GMProjAbs)
   if("$Contrast" == "-1") set cmd = ($cmd --wm-gt-gm $Slope1);
@@ -528,6 +529,7 @@ while( $#argv != 0 )
 
     case "--subject":
     case "--s":
+      # This should be after --initreg
       if ( $#argv < 1) goto arg1err;
       set subject = $argv[1]; shift;
       breaksw
