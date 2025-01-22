@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>338</width>
+    <width>353</width>
     <height>223</height>
    </rect>
   </property>
@@ -161,9 +161,12 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::MinimumExpanding</enum>
+       </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
+         <width>30</width>
          <height>20</height>
         </size>
        </property>
@@ -172,7 +175,14 @@
      <item>
       <widget class="QPushButton" name="pushButtonSave">
        <property name="text">
-        <string>Save As</string>
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonSave_2">
+       <property name="text">
+        <string>Close</string>
        </property>
       </widget>
      </item>
@@ -237,7 +247,7 @@
    <slot>OnButtonSave()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>282</x>
+     <x>222</x>
      <y>195</y>
     </hint>
     <hint type="destinationlabel">
@@ -246,10 +256,27 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButtonSave_2</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogGifMaker</receiver>
+   <slot>OnButtonClose()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>286</x>
+     <y>198</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>304</x>
+     <y>404</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnButtonAdd()</slot>
   <slot>OnButtonClear()</slot>
   <slot>OnButtonSave()</slot>
+  <slot>OnButtonClose()</slot>
  </slots>
 </ui>
