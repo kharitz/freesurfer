@@ -61,6 +61,7 @@ class QFileSystemWatcher;
 class DialogTransformSurface;
 class DialogMovePoint;
 class QUrl;
+class DialogGifMaker;
 
 #define MAX_RECENT_FILES    10
 
@@ -325,6 +326,8 @@ public slots:
   void SetNeurologicalView(bool b);
 
   void OnFlattendSurfacePatchLoaded();
+
+  void OnSaveGif();
 
 protected:
   void closeEvent   ( QCloseEvent * event );
@@ -729,6 +732,7 @@ private:
   QWidget*              m_widgetFloatControlPanel;
   QWidget*              m_widgetFloatInfoPanel;
   DialogMovePoint*      m_dlgMovePoint;
+  DialogGifMaker*       m_dlgSaveGif;
 
   VolumeFilterWorkerThread* m_threadVolumeFilter;
 

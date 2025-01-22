@@ -207,6 +207,7 @@ if(BUILD_GUIS AND VTK_FOUND AND TARGET vtkutils)
     ToolWindowLesionPopup.cpp
     DialogLoadODF.cpp
     LayerEditRef.cpp
+    DialogGifMaker.cpp
     freeview.qrc
   )
 
