@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # This script runs Cortical Parcellation, Surface Anatomical Stats and Aparc2aseg using a given .gcs file.
 set RunIt = 1
 set ProgName = `basename $0`;
