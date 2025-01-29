@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 # compute_all_label_volumes
 #

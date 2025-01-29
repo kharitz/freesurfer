@@ -1,3 +1,4 @@
+#!/usr/local/env tclsh
 ##
 ## fsgdfPlot.tcl
 ##

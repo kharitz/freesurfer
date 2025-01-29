@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 
 #
 # clear_fs_env.csh
