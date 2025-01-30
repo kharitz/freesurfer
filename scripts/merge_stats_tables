@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # merge_stats_tables
@@ -24,12 +24,9 @@ warnings.filterwarnings('ignore', '.*negative int.*')
 
 import os
 import sys
-import shlex
 import optparse
 import logging
-import subprocess
-import tempfile
-import shutil
+import errno
 import fsbindings.legacy as fsutils
 
 
@@ -452,7 +449,7 @@ def parse_stats_table(intable):
 
     if not os.path.exists(intable):
         print('ERROR: '+str(intable)+' not found!')
-        raise BadFileError(filename)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), intable)
         
     fp = open(intable,'r')
     first = fp.readline()    
@@ -512,7 +509,7 @@ if __name__=="__main__":
 #            l.debug(id_name_map)
 #            l.debug('-- Measures --')
 #            l.debug(measurelist)
-        except BadFileError as e:
+        except FileNotFoundError as e:
             if options.skipflag:
                 print('Skipping ' + str(e))
                 continue
