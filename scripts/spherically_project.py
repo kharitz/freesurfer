@@ -1,8 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from __future__ import print_function
 
 import optparse
-import os
 import sys
 import nibabel.freesurfer.io as fs
 import numpy as np

@@ -1,4 +1,4 @@
-#!/bin/csh -f
+#!/usr/bin/env csh -f
 
 if(! $?FS_MCRROOT) setenv FS_MCRROOT /usr/pubsw/common/matlab/8.3
 

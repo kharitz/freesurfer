@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # bedpostx_mgh
 # (This script was modified from FSL's bedpostx by Anastasia Yendiki)

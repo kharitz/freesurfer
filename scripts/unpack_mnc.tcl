@@ -1,4 +1,4 @@
-
+#!/usr/bin/env tclsh
 ##
 ## unpack_mnc.tcl
 ## This script looks at the headers of minc files in a predetermined 

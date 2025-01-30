@@ -1,4 +1,4 @@
-#!/usr/bin/emv tcsh -ef
+#!/usr/bin/env tcsh -ef
 
 #
 # make_final_surfaces_subject-rh

@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 
 # $srcdir is defined in make check runtime environment
 set SRCDIR=$PWD

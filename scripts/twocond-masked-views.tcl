@@ -1,3 +1,4 @@
+#!/usr/bin/env tclsh
 ##
 ## twocond-masked-views.tcl
 ##
