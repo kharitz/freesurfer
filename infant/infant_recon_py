@@ -5,9 +5,10 @@ import yaml
 import heapq
 import shutil
 import glob
+#import freesurfer as fs
 import argparse
 import surfa as sf
-import freesurfer_pipeline as fsp
+from surfa import pipeline as fsp
 
 
 description='''
@@ -21,7 +22,9 @@ extraction pipeline for T1-weighted neuroimaging data of
 infants 0-2 years. arXiv:2001.03091, 2020
 '''
 
+
 # ---- Parse Options ----
+
 
 parser = argparse.ArgumentParser(description=description)
 
@@ -34,6 +37,7 @@ parser.add_argument('-o', '--outdir', help='Name of the output directory where a
                     ' is $SUBJECTS_DIR/subject.')
 parser.add_argument('--age', type=int, help='Age of the subject in months.')
 parser.add_argument('--masked', help='Pre-masked input image. Providing this will skip the skull-stripping step.')
+parser.add_argument('--mask', help='Pre-masked input image. Providing this will skip the skull-stripping step. Unlike --masked, will do all volume normalizations to the provided mask.')
 parser.add_argument('--segfile', help='Volumetric segmentation from another source. Unless --forceskullstrip is set, a masked' \
                     ' input image is also expected along with and matching this input.')
 parser.add_argument('--t2', action='store_true', help='Enable T2 processing.')
@@ -45,7 +49,7 @@ parser.add_argument('--newborn', action='store_true', help='Indicate that the su
 parser.add_argument('--oneyear', action='store_true', help='Indicate that the subject is a one-year-old. All five' \
                     ' approx-one-year-old subjects from the training data set will be used. No age input is needed if this flag is set.')
 parser.add_argument('--avoidtraining', help='Exclude specific training subject(s) from processing.')
-
+parser.add_argument('--model', help='Specify alternate model weights to use for skullstripping', default=os.path.join(os.environ.get('FREESURFER_HOME'),"average/sscnn_skullstripping/infant_synthstrip_01012025.pt"))
 # Processing options
 parser.add_argument('--kneigh', type=int, help='Number of training subjects for acquiring prior information about segmentation.')
 parser.add_argument('--forceskullstrip', action='store_true', help='Enforce that skullstripping is carried out and a masked input image' \
@@ -67,8 +71,9 @@ parser.add_argument('--keep-going', action='store_true', help='Pick-up processin
 parser.add_argument('--force', action='store_true', help='Force all processing to be redone even if it had been run (partially) before.')
 parser.add_argument('--no-cleanup', action='store_true', help='Do not delete temporary files. If this option is set, make sure you have at least' \
                     ' 2G space in the output directory.')
-parser.add_argument('--usegpu', action='store_true', help='Use the powers of GPU for the skullstripping computations.')
-parser.add_argument('--gpuid', default='0', help='This option specifies a GPU to be used for the computations.')
+# temporarily removed while testing if we need the GPU for this
+#parser.add_argument('--usegpu', action='store_true', help='Use the powers of GPU for the skullstripping computations.')
+#parser.add_argument('--gpuid', default='0', help='This option specifies a GPU to be used for the computations.')
 parser.add_argument('--checkresults',action='store_true', help='View results with freeview through processing.')
 
 args = parser.parse_args()
@@ -79,7 +84,8 @@ subjsdir = os.environ.get('SUBJECTS_DIR')
 outdir = os.path.abspath(args.outdir) if args.outdir else os.path.abspath(os.path.join(subjsdir, subj))
 
 # Check if FS is set
-fshome = os.environ.get('FREESURFER_HOME')
+#fshome = fs.fshome()
+fshome = sf.freesurfer.home()
 if not fshome:
     sf.system.fatal('Must set FREESURFER_HOME before running.')
 template_subjs_dir = os.path.join(fshome, 'average', 'CNYBCH')
@@ -90,7 +96,7 @@ enforce_gm_wm_template_subj = True
 subj_age = args.age
 check_results = args.checkresults
 regtype = 'dramms' if args.usedramms else 'niftyreg'
-gpu = args.gpuid if args.usegpu else '-1'
+#gpu = args.gpuid if args.usegpu else '-1'
 set_custom_k_neighbors = args.kneigh is not None
 k_neighbors = args.kneigh if args.kneigh else 4
 
@@ -105,7 +111,7 @@ if args.oneyear:
 input_t1 = os.path.abspath(args.inputfile) if args.inputfile else None
 input_masked = os.path.abspath(args.masked) if args.masked else None
 input_seg = os.path.abspath(args.segfile) if args.segfile else None
-
+external_mask = os.path.abspath(args.mask) if args.mask else None
 
 # ---- Sanity check on the inputs ----
 
@@ -126,6 +132,13 @@ if not input_t1 and not input_masked:
 if input_masked and args.forceskullstrip:
     sf.system.fatal('Cannot force skullstripping while providing skullstripped input.')
 
+if args.forceskullstrip or not input_masked:
+    if not os.path.isfile(args.model):
+        sf.system.fatal(f'Cannot locate the model file needed for the skullstripping step: {args.model}')
+
+if external_mask and input_masked:
+    sf.system.fatal('Cannot specify both --mask and --masked, chose one or the other.')
+
 if args.t2 and not args.t2file:
     sf.system.fatal('Must have a T2w file provided by --t2file when --t2 flag is used.')
 
@@ -139,8 +152,8 @@ if args.newborn and args.oneyear:
     sf.system.fatal('Cannot specify both --newborn and --oneyear.')
 
 if input_masked and input_seg:
-    img_shape = sf.load_volume(input_masked).baseshape
-    seg_shape = sf.load_volume(input_seg).baseshape
+    img_shape = sf.load_volume(input_masked).shape[:3]
+    seg_shape = sf.load_volume(input_seg).shape[:3]
     if img_shape != seg_shape:
         sf.system.fatal('The masked mprage and segmentation files have to have the same volume dimensions!')
 
@@ -150,8 +163,8 @@ if input_masked and input_seg:
 
 # Let's start operating from within the output directory, so make sure
 # absolute paths to any inputs have been resolved by now
-os.makedirs(outdir, exist_ok=True)
-os.chdir(outdir)
+os.makedirs(os.path.join(outdir, subj), exist_ok=True)
+os.chdir(os.path.join(outdir,subj))
 os.environ['SUBJECTS_DIR'] = os.path.dirname(outdir)
 
 pl = fsp.CommandPipeline(
@@ -180,16 +193,19 @@ if input_masked:
 else:
 
     # ---- Handle input volume ----
-
+    
     mprage = 'mprage.nii.gz'
-
+    # if this file doesn't exist in the outdir, copy it over
+    if not os.path.isfile(mprage):
+        shutil.copyfile(input_t1, mprage)
     if input_t1:
         if not os.path.isfile(input_t1):
             pl.fatal(f'{input_t1} is not a valid input file.')
         pl.print(f'Input file: {input_t1}')
-        pl.run(f'mri_convert {input_t1} {mprage}', inputs=input_t1, outputs=mprage)
         if not input_t1.endswith('.nii.gz'):
             pl.run(f'mri_convert {input_t1} {mprage}', inputs=input_t1, outputs=mprage)
+        elif os.path.samefile(input_t1, mprage):
+            pass
         else:
             pl.run(f'cp {input_t1} {mprage}', inputs=input_t1, outputs=mprage)
     else:
@@ -212,19 +228,33 @@ else:
         commands.append(f'mri_nu_correct.mni --i {mprage} --o {norm} --n 2')
 
     commands.append(f'mri_convert --conform-dc {norm} {conf}')
-    commands.append(f'sscnn_skullstrip -i {conf} -o work/sscnn -c t1w --gpu {gpu}')
-    commands.append(f'mri_mask {conf} work/sscnn/sscnn_skullstrip.nii.gz {masked}')
+    # skip skull-stripping if --mask was passed
+    if external_mask is None:
+        os.makedirs('work/sscnn', exist_ok=True)
+        commands.append(f'mri_synthstrip -i {conf} -o work/sscnn/sscnn_skullstrip.nii.gz --model {args.model}')
 
+        commands.append(f'mri_mask {conf} work/sscnn/sscnn_skullstrip.nii.gz {masked}')
+    # if --mask was passed, copy it
+    else:
+        commands.append(f'cp {external_mask} {masked}')
+    
     if not args.no_cleanup:
         commands.append('rm -rf work/*')
 
     pl.run(commands, inputs=mprage, outputs=masked)
 
-    if check_results:
-        sf.system.run(f'freeview -v {mprage} {masked}:colormap=heat')
-
 pl.print(f'Normalized and masked image: {masked}')
 
+if check_results:
+    # some logic to load the proper intensity volume, based on inputs
+    to_show = input_t1 if not input_masked else input_masked
+    # test for the mprage var
+    if 'mprage' in locals().keys():
+        to_show = mprage
+    sf.system.run(f'freeview -v {to_show} {masked}:colormap=heat')
+# Removed: don't want to open FV if check_results not passed, usually on cluster
+#else:
+#    fs.run(f'freeview -v {mprage}')
 
 # ---- Step 2: Segment ----
 
@@ -369,7 +399,7 @@ else:
 
     # Switching old thalamus labels to new FS ones
     recoded = 'work/recoded.nii.gz'
-    commands.append(f'mri_binarize --i {mrf_seg} --replaceonly 48 49 --replaceonly 9 10 --o {recoded}')
+    commands.append(f'mri_binarize --i {mrf_seg} --replace 48 49 --replace 9 10 --o {recoded}')
 
     # Full brain
     # TODO is this even used?
@@ -379,6 +409,8 @@ else:
     commands.append(f'mri_distance_transform {label_mask} 1 3 3 {dist_map}')
 
     # Correct segmentation (depending on whether GM/WM exists)
+    #DEBUG
+    commands.append('echo $PWD')
     commands.append(f'mri_binarize --match 2 41 --count work/count.txt --i {recoded}')
     commands.append('numvox=$(awk \'{print $1}\' work/count.txt)')
     commands.append('if [ $numvox -eq 0 ]; then opt="-n"; fi')
@@ -444,16 +476,29 @@ outputs = [
     'surf/lh.white', 'surf/rh.white',
     'surf/lh.sphere', 'surf/rh.sphere',
 ]
+
+"""
+Some issues running these scrips when the --output flag is passed, some of the
+calls expect that 'output' is the SUBJECTS_DIR, then the following FS commands
+expect we are in the 'output' dir.
+Cache the values of SUBJECTS_DIR and PWD, then set them to be what we need when
+we need them, and set things back once the pipeline finshes
+"""
+
+s_dir_cache = os.environ['SUBJECTS_DIR']
+pwd_dir_cache = os.environ['PWD']
+os.environ['SUBJECTS_DIR'] = outdir
+
+# originally --s {subj}
 pl.run(f'create_wm_surfaces_mprage_subject.csh --s {subj}', inputs, outputs)
 
 # Build pial surfaces
 inputs = ['surf/lh.white', 'surf/rh.white']
 outputs = ['surf/lh.pial', 'surf/rh.pial']
+# originally --s {subj}
 pl.run(f'create_pial_surfaces_mprage_subject.csh --s {subj}', inputs, outputs)
 
-
 # ---- Step 5: Compute stats ----
-
 
 if not args.no_stats:
 
@@ -535,6 +580,9 @@ if not args.no_cleanup:
         shutil.rmtree('work')
     for filename in glob.glob('surf/*.tmp'):
         os.remove(filename)
+
+print(f'#$# RESETTING SUBJECTS DIR')
+os.environ['SUBJECTS_DIR'] = s_dir_cache
 
 # All done!
 pl.done()

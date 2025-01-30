@@ -183,7 +183,8 @@ if not os.path.isdir(outdir):
 
 # Load the fixed image
 fixed_image = nib.load(args.image)
-fixed_vol = fixed_image.get_data()
+#fixed_vol = fixed_image.get_data()
+fixed_vol = np.asanyarray(fixed_image.dataobj)
 fixed_affine = fixed_image.affine
 
 # Locate main component of the fixed input
@@ -204,7 +205,8 @@ num_nonzeros = len(nonzeros)
 it = np.interp(nonzeros, (nonzeros.min(), nonzeros.max()), (1, 1000))
 
 # Load and crop segmentations
-moving_vols = [nib.load(fname).get_data()[cropping] for fname in args.segs]
+#moving_vols = [nib.load(fname).get_data()[cropping] for fname in args.segs]
+moving_vols = [np.asanyarray(nib.load(fname).dataobj)[cropping] for fname in args.segs]
 num_opinions = len(moving_vols)
 
 # Extract unique labels
