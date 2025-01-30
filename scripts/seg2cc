@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 #
 # seg2cc - take a seg like synthseg and create a seg with corpus callosum
 # Also can create a "noCC" file. This is somewhat redundant with seg2recon

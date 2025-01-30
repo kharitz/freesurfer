@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # fsr-coreg 
 
 #  In theory, it would be better to resample all modes into an

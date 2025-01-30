@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # wmedits2surf
 
 set VERSION = 'wmedits2surf @FS_VERSION@';

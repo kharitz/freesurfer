@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 #
 # renormalize_subject_keep_editting

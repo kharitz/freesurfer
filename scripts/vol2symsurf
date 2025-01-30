@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # vol2symsurf
 
 set VERSION = 'vol2symsurf @FS_VERSION@';

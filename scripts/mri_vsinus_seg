@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # mri_vsinus_seg - segmentation of venous sinuses
 if(-e $FREESURFER_HOME/sources.csh) then
   source $FREESURFER_HOME/sources.csh

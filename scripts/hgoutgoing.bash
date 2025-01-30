@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Simple script to be run after an 'hg push'
 sleep 5

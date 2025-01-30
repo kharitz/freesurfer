@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script converts the variables defined in a config file to valid csh.
 # The generated csh commands are printed to stdout, so running this script
@@ -8,7 +8,6 @@
 
 import sys
 import yaml
-import argparse
 
 
 def error(message):

@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # fsr-longpreproc - sources
 if(-e $FREESURFER_HOME/sources.csh) then
   source $FREESURFER_HOME/sources.csh

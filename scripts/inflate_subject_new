@@ -1,4 +1,4 @@
-#! /bin/tcsh
+#!/usr/bin/env tcsh
 
 #
 # inflate_subject_new

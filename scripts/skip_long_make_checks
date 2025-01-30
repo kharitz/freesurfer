@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 # if these are defined, then make check skips these long tests:
 setenv SKIP_MRI_APARC2ASEG_TEST 1
 setenv SKIP_MRIS_EXPAND_TEST 1

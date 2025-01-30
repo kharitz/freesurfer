@@ -1,4 +1,4 @@
-
+#!/usr/bin/env tclsh
 ##
 ## unpack_ima.tcl
 ##

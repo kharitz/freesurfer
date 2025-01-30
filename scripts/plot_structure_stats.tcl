@@ -1,3 +1,4 @@
+#!/usr/bin/env tclsh
 ##
 ## plot_structure_stats.tcl
 ##

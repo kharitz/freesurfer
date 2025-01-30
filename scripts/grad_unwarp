@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 #
 # grad_unwarp - convert, unwarp, and resample dicom files

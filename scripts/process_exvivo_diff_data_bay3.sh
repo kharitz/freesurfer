@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 #set echo=1
 
 # this version of the original do,qbi script works with the Bay 3 SSFP diffusion data. 

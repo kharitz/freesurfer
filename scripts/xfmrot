@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 if ($#argv < 2 || $#argv > 3) then
   echo "xfmrot <transform file> <input vector file> [<output vector file>]"
