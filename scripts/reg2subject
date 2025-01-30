@@ -1,4 +1,4 @@
-#!/usr/bin/emv tcsh -f
+#!/usr/bin/env tcsh -f
 # reg2subject
 
 set VERSION = 'reg2subject @FS_VERSION@';
