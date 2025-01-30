@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # long_submit_jobs
@@ -655,7 +655,7 @@ def run_base(qdectable,options):
 
         basedir   = os.path.join(options.bdir,subjectid)
         if os.path.exists(basedir) and not ( os.access(basedir,os.R_OK) and os.access(basedir,os.X_OK)and os.access(basedir,os.W_OK)):
-            print("ERROR [base]: "+subjid+" missing rwx rights in "+options.bdir+"\n")
+            print("ERROR [base]: "+subjectid+" missing rwx rights in "+options.bdir+"\n")
             norightsB.append( subjectid )
             if options.simulate:
                 continue
@@ -678,7 +678,7 @@ def run_base(qdectable,options):
             continue
         if os.path.exists(iserror) and options.skiperror:
             print("Skipping base "+subjectid+"  (quit with error earlier)\n")
-            error.append( (subjectid,tpid) )
+            error.append( subjectid )
             continue
 
         tpids = [entry[0] for entry in tplist]
