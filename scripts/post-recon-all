@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/emv tcsh -f
 # post-recon-all 
 # stuff to run after running recon-all, good for testing
 # Do CVS separately because it requires so many resources

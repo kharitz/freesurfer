@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 #
 # seg2recon - create and populate a subjects dir given the seg and
 # input vol in a way that recon-all can be run on it. This is similar

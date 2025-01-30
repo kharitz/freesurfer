@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # sratio - signed ratio
 #   +A/B if A>B
 #   -B/A if B>A

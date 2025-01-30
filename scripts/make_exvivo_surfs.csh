@@ -1,4 +1,4 @@
-#!/bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 # usage: make_exvivo_surfs.csh <subject name> <input samseg> <input intensity vol>
 
 if ( $#argv < 4) then

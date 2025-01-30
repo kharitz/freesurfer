@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 # recon-all.v6.hires - modification of the v6.0 recon-all to better
 # handle hires and T2 surface placement and accomodate HCP. These

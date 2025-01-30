@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 # mni152reg
 
 set VERSION = 'mni152reg @FS_VERSION@';

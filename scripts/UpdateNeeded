@@ -1,4 +1,4 @@
-#!/bin/csh -f
+#!/usr/bin/env csh -f
 
 # Tests whether the TargetFile is older than any of the sources files.
 # echoess 1 if TargetFile does not exist or is older than any of the

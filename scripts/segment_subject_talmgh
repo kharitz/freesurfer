@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/usr/bin/env tcsh -ef
 
 #
 # segment_subject_talmgh

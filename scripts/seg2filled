@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 # seg2filled - creates a filled.mgz from an aseg-style
 # segmentation. The original intent is to use a SAMSEG segmentation to

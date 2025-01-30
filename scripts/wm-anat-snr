@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/usr/bin/env tcsh -f
 
 set VERSION = 'wm-anat-snr @FS_VERSION@';
 set inputargs = ($argv);
