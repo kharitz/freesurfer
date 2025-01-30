@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # long_stats_tps
@@ -226,10 +226,10 @@ if __name__=="__main__":
     variables=qdectable.variables
     
     # if qcol selected:
-    qcolidx = -1;
+    qcolidx = -1
     if options.qcol is not None:
         foundidx = False
-        for index in (i for i in xrange(len(variables)) if variables[i].upper()==options.qcol.upper()):
+        for index in (i for i in range(len(variables)) if variables[i].upper()==options.qcol.upper()):
             qcolidx = index
             foundidx = True
             #print('found: '+str(varidx)+' '+variables[varidx])
@@ -256,11 +256,11 @@ if __name__=="__main__":
                 
         # check if 2 or more time points
         if len(tplist) < options.tp :
-            print('ERROR: '+str(basedir)+' must have at least '+str(options.tp)+' time points!')
+            print('ERROR: '+str(subjectid)+' must have at least '+str(options.tp)+' time points!')
             sys.exit(1)
         
         if options.qcol is not None:
-            qcoldata.append(tplist[options.tp-1][qcolidx]);
+            qcoldata.append(tplist[options.tp-1][qcolidx])
         
         # extract id:
         if options.cross:
