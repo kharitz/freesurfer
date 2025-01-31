@@ -567,6 +567,9 @@ MRIS_HASH_TABLE_NoSurface::~MRIS_HASH_TABLE_NoSurface()
 #ifdef HAVE_OPENMP
     omp_destroy_lock(&buckets_lock);
 #endif
+    // DNG: before 1/31/25, f was not being freed, which created a memory leak.
+    if(f) free(f);
+    f=NULL;
 }
 
 
