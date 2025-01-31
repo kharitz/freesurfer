@@ -75,6 +75,8 @@ public:
   int PrintMatrix(FILE *fp, std::vector<std::vector<double>> m);
   int WriteVector(char *fname, std::vector<double> mrow);
   int PrintVector(FILE *fp, std::vector<double> mrow);
+  int PrintVectorGlmFit(FILE *fp, std::vector<double> m);
+  int WriteVectorGlmFit(char *fname, std::vector<double> m);
   char *ccpermfile=NULL;
 };
 
@@ -105,6 +107,7 @@ int threads = 1;
 FILE *logfp=NULL;
 char *SUBJECTS_DIR=NULL;
 char *ccfile = NULL;
+char *glmfitfile = NULL;
 
 /*---------------------------------------------------------------*/
 int main(int argc, char *argv[]) 
@@ -168,11 +171,15 @@ int main(int argc, char *argv[])
   }
   st.seed = seed;
 
+  // Prune the masks with the data?
   std::vector<double> cc = MRIspatialCC(st.ref,refframe,st.refmask,st.map,st.mapmask);
   if(ccfile) st.WriteVector(ccfile,cc);
-  else {
+  if(glmfitfile) st.WriteVectorGlmFit(glmfitfile,cc);
+  if(outdir){
     sprintf(fname,"%s/cc.dat",outdir);
     st.WriteVector(fname,cc);
+    sprintf(fname,"%s/cc.glmfit.dat",outdir);
+    st.WriteVectorGlmFit(fname,cc);
   }
 
   Timer timer, mytimer;
@@ -236,6 +243,11 @@ static int parse_commandline(int argc, char **argv) {
     else if(!strcasecmp(option, "--cc")) {
       if(nargc < 1) CMDargNErr(option,1);
       ccfile = pargv[0];
+      nargsused = 1;
+    }
+    else if(!strcasecmp(option, "--cc-glmfit")) {
+      if(nargc < 1) CMDargNErr(option,1);
+      glmfitfile = pargv[0];
       nargsused = 1;
     }
     else if(!strcasecmp(option, "--sphere")) {
@@ -336,6 +348,8 @@ static void print_usage(void) {
   printf("   --seed seed\n");
   printf("   --ref-frame frameno (0-based)\n");
   printf("   --nperm nperm\n");
+  printf("   --cc ccfile\n");
+  printf("   --cc-glmfit ccglmfitfile\n");
   // revmapflag, dojac, --s subject hemi
   #ifdef _OPENMP
   printf("   --threads N : use N threads (with Open MP)\n");
@@ -415,7 +429,6 @@ static void dump_options(FILE *fp) {
 
 std::vector<std::vector<double>> MRISspinTest::SpinPerm(int nperm)
 {
-  //std::vector<std::vector<double>> ccperm(nperm);
   std::vector<std::vector<double>> ccperm(nperm,std::vector<double>(3+map->nframes));
   std::vector<double> alphalist(nperm), betalist(nperm), gammalist(nperm);
 
@@ -549,5 +562,17 @@ int MRISspinTest::PrintVector(FILE *fp, std::vector<double> mrow)
   for(int k=0; k < mrow.size(); k++) fprintf(fp,"%8.4f ",mrow[k]);
   fprintf(fp,"\n"); 
   fflush(fp);
+  return(0);
+}
+int MRISspinTest::PrintVectorGlmFit(FILE *fp, std::vector<double> m)
+{
+  fprintf(fp,"RowNo Val\n");
+  for(int c=0; c < m.size(); c++) fprintf(fp,"%2d %8.4lf\n",c,m[c]);
+  return(0);
+}
+int MRISspinTest::WriteVectorGlmFit(char *fname, std::vector<double> m)
+{
+  FILE *fp = fopen(fname,"w");
+  this->PrintVectorGlmFit(fp,m);
   return(0);
 }
