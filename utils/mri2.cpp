@@ -7806,3 +7806,91 @@ MRI *MRIcropAroundRAS(MRI *vol, double rasCenter[3], int voxFoVRAS[3], LTA *lta0
   MatrixFree(&crs);
   return(crop);
 }
+
+/*!
+  \fn std::vector<double> MRIspatialCC(MRI *ref, int refframe, MRI *refmask, MRI *map, MRI *mapmask)
+  \brief Compute the spatial pearson correlation coefficient between
+  the ref and the map inputs. The reframe frame of the ref is
+  used. map may have multiple frames. Returns a vector PCCs between
+  the ref and each map.  Voxels are only included if they are in both
+  refmask and mapmask. If a mask is NULL, then it is treated as all
+  ones.
+*/
+std::vector<double> MRIspatialCC(MRI *ref, int refframe, MRI *refmask, MRI *map, MRI *mapmask)
+{
+  int nmaps = map->nframes;
+  std::vector<double> cc(nmaps), mapsum(nmaps), mapsum2(nmaps), refmapsum(nmaps);
+
+  if(MRIdimMismatch(ref, map, 0)){
+    printf("ERROR: MRIspatialCC() dimension mismatch between ref and map\n");
+    cc.clear();
+    return(cc);
+  }
+  if(refmask && MRIdimMismatch(ref, refmask, 0)){
+    printf("ERROR: MRIspatialCC() dimension mismatch with refmask\n");
+    cc.clear();
+    return(cc);
+  }
+  if(mapmask && MRIdimMismatch(ref, mapmask, 0)){
+    printf("ERROR: MRIspatialCC() dimension mismatch with mapmask\n");
+    cc.clear();
+    return(cc);
+  }
+  if(refframe >= ref->nframes){
+    printf("ERROR: MRIspatialCC() refframe=%d >= nframes=%d\n",refframe,ref->nframes);
+    cc.clear();
+    return(cc);
+  }
+
+  // Compute sums and sums of squares which can then be used to
+  // compute means and standard deviations.  This way only needs one
+  // pass through the data as opposed to two passes where the mean is
+  // computed first then the stddev.
+
+  //FILE *fp = fopen("spin.dat","w"); // use this for testing
+  double refsum=0, refsum2=0;
+  int nhits = 0;
+  for(int c=0; c < ref->width; c++){
+    for(int r=0; r < ref->height; r++){
+      for(int s=0; s < ref->depth; s++){
+	int mref = 1, mmap = 1;
+	if(refmask) mref = MRIgetVoxVal(refmask,c,r,s,0);
+	if(!mref) continue;
+	if(mapmask) mmap = MRIgetVoxVal(mapmask,c,r,s,0);
+	if(!mmap) continue;
+	nhits++;
+	double refval = MRIgetVoxVal(ref,c,r,s,refframe);
+	//fprintf(fp,"%10.5lf ",refval);
+	refsum += refval;
+	refsum2 += (refval*refval);
+	for(int f=0; f < map->nframes; f++){
+	  double mapval = MRIgetVoxVal(map,c,r,s,f);
+	  //fprintf(fp,"%10.5lf ",mapval);
+	  mapsum[f] += mapval;
+	  mapsum2[f] += (mapval*mapval);
+	  refmapsum[f] += (refval*mapval);
+	}
+	//fprintf(fp,"\n");
+      }
+    }
+  }
+  //fclose(fp);
+
+  double refmn = refsum/nhits;
+  double drefsum2 = (refsum2 - 2*refmn*refsum + nhits*refmn*refmn);
+  printf("MRIspatialCC(): refframe=%d\n",refframe);
+  printf("nhits = %d  refmn = %g  refsum2 = %g drefsum2 = %g\n",nhits,refmn,refsum2,drefsum2);
+  for(int f=0; f < map->nframes; f++){
+    double mapmn = mapsum[f]/nhits;
+    double dmapsum2 = (mapsum2[f] - 2*mapmn*mapsum[f] + nhits*mapmn*mapmn);
+    double num = refmapsum[f] - refmn*mapsum[f] - mapmn*refsum + nhits*refmn*mapmn;
+    double den = sqrt(drefsum2*dmapsum2);
+    cc[f] = num/den;
+    printf("f=%d mapmn=%g mapsum2=%g refmapsum=%g dmapsum2=%g den=%g num=%g   cc=%g\n",f,mapmn,mapsum2[f],refmapsum[f],dmapsum2,den,num,cc[f]);
+    //printf("%8.6lf ",cc[f]);
+  }
+  printf("\n");
+  fflush(stdout);
+
+  return(cc);
+}
