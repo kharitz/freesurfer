@@ -639,6 +639,11 @@ MRIS* MRIStalairachTransform(MRIS* mris_src, MRIS* mris)
 template <class Surface>
 void MRISrotate(Surface surface, float alpha, float beta, float gamma)
 {
+  // Angles are in radians
+  // alpha is rotation about z
+  // beta is rotation about y
+  // gamma is rotation about x
+  // Note that these are rotations, not spherical coords
   surface.freeDistsButNotOrig();
 
   float const sa = sin(alpha);
@@ -674,6 +679,8 @@ void MRISrotate(Surface surface, float alpha, float beta, float gamma)
       DiagBreak();
     }
 
+    // This corresponds to Tait-Bryan angles Zalpha*Ybeta*Xgamma
+    //https://en.wikipedia.org/wiki/Euler_angles
     auto vertex = surface.vertices(vno);
     float x = vertex.x();
     float y = vertex.y();
