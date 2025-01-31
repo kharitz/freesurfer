@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # spmseg
 
 set VERSION = 'spmseg @FS_VERSION@';

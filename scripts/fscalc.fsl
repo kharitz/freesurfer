@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 #
 # This is a utility that extends fslmaths so that an format that can
 # be read/written by freesurfer can be used. It operates in the same

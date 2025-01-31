@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # mergeseg
 
 set VERSION = 'mergeseg @FS_VERSION@';

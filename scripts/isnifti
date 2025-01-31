@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 
 #
 # isnifti - checks whether the passed file is a nifti file

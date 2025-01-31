@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 #
 # samseg2recon - create and populate a subjects dir in a way that
 # recon-all can be run on it.

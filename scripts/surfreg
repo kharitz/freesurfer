@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # surfreg
 
 set VERSION = 'surfreg @FS_VERSION@';

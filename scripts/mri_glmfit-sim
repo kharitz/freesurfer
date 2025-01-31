@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 set VERSION = 'mri_glmfit-sim @FS_VERSION@';
 setenv LANG en_US.UTF-8
 

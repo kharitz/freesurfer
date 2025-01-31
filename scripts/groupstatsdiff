@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # groupstatsdiff
 
 set VERSION = 'groupstatsdiff @FS_VERSION@';

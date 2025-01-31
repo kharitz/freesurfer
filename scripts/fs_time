@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # fs_time
 
 # Check whether FS_TIME_ALLOW exists, if not assume it is ok

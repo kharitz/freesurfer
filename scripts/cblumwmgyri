@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # cblumwmgyri
 
 set VERSION = 'cblumwmgyri @FS_VERSION@';

@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 
 # Copyright © 2021 The General Hospital Corporation (Boston, MA) "MGH"
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # nu_correct_one.csh
