@@ -933,6 +933,7 @@ if(NOT MINIMAL)
     mris_simulate_atrophy
     mris_smooth_intracortical
     mris_spherical_average
+    mris_spintest
     mris_surface_to_vol_distances
     mris_talairach
     mris_thickness_comparison
