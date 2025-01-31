@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # bmedits2surf
 
 set VERSION = 'bmedits2surf @FS_VERSION@';

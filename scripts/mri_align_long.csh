@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/bin/tcsh -f
 
 #
 # mri_align_long.csh

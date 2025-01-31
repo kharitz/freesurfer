@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 
 # fsxvfb - a simple application of the virtual frame buffer (vrb) for
 # X This can run graphical commands in a "headless" way, ie, without

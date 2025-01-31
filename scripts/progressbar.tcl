@@ -1,3 +1,4 @@
+#!/usr/bin/env tclsh
 #
 # Progressbar Widget written in pure tcl
 #
@@ -64,29 +65,29 @@
 # PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
 # REPAIR OR CORRECTION.
 #
-# #######################   KEINE GEWÄHRLEISTUNG  #########################
+# #######################   KEINE GEWï¿½HRLEISTUNG  #########################
 #
 # Da das Programm ohne jegliche Kosten lizenziert wird, besteht
-# keinerlei Gewährleistung für das Programm, soweit dies gesetzlich zulässig
-# ist. Sofern nicht anderweitig schriftlich bestätigt, stellen die
-# Copyright-Inhaber und/oder Dritte das Programm so zur Verfügung, "wie es
-# ist", ohne irgendeine Gewährleistung, weder ausdrücklich noch implizit,
-# einschließlich - aber nicht begrenzt auf - Marktreife oder Verwendbarkeit
-# für einen bestimmten Zweck. Das volle Risiko bezüglich Qualität und
-# Leistungsfähigkeit des Programms liegt bei Ihnen. Sollte sich das Programm
-# als fehlerhaft herausstellen, liegen die Kosten für notwendigen Service,
+# keinerlei Gewï¿½hrleistung fï¿½r das Programm, soweit dies gesetzlich zulï¿½ssig
+# ist. Sofern nicht anderweitig schriftlich bestï¿½tigt, stellen die
+# Copyright-Inhaber und/oder Dritte das Programm so zur Verfï¿½gung, "wie es
+# ist", ohne irgendeine Gewï¿½hrleistung, weder ausdrï¿½cklich noch implizit,
+# einschlieï¿½lich - aber nicht begrenzt auf - Marktreife oder Verwendbarkeit
+# fï¿½r einen bestimmten Zweck. Das volle Risiko bezï¿½glich Qualitï¿½t und
+# Leistungsfï¿½higkeit des Programms liegt bei Ihnen. Sollte sich das Programm
+# als fehlerhaft herausstellen, liegen die Kosten fï¿½r notwendigen Service,
 # Reparatur oder Korrektur bei Ihnen.
 #
 # #######################  LIMITATION DE GARANTIE  ########################
 #
 # Parce que l'utilisation de ce Programme est libre et gratuite, aucune
-# garantie n'est fournie, comme le permet la loi. Sauf mention écrite,
-# les détenteurs du copyright et/ou les tiers fournissent le Programme en
-# l'état, sans aucune sorte de garantie explicite ou implicite, y compris
+# garantie n'est fournie, comme le permet la loi. Sauf mention ï¿½crite,
+# les dï¿½tenteurs du copyright et/ou les tiers fournissent le Programme en
+# l'ï¿½tat, sans aucune sorte de garantie explicite ou implicite, y compris
 # les garanties de commercialisation ou d'adaptation dans un but
-# particulier. Vous assumez tous les risques quant à la qualité et aux
-# effets du Programme. Si le Programme est défectueux, Vous assumez le
-# coût de tous les services, corrections ou réparations nécessaires.
+# particulier. Vous assumez tous les risques quant ï¿½ la qualitï¿½ et aux
+# effets du Programme. Si le Programme est dï¿½fectueux, Vous assumez le
+# coï¿½t de tous les services, corrections ou rï¿½parations nï¿½cessaires.
 #
 # ##############################  HISTORY  ################################
 #

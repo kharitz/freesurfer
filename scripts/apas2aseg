@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # apas2aseg
 
 set VERSION = 'apas2aseg @FS_VERSION@';

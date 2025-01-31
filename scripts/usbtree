@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Reads /proc/bus/usb/devices and selectively lists and/or
 # interprets it.

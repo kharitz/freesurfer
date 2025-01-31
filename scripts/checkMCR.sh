@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 
 # Eugenio: note that when I used v80, I used to look for libdctprocess.so, 
 # but not I look for libmwlaunchermain.so instead (which is not present in v80)

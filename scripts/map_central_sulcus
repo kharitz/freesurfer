@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # map_central_sulcus
