@@ -1,4 +1,4 @@
-
+#!/usr/bin/env tclsh
 ##
 ## browse-minc-header.tcl
 ##

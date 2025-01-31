@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # reregister_subject_mixed

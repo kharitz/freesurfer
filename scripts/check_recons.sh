@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 HELP=" 
   Checks the status of subjects being processed by recon-all

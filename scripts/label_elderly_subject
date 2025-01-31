@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # label_elderly_subject

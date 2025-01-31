@@ -1,4 +1,4 @@
-#! /bin/tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # register_subject_flash

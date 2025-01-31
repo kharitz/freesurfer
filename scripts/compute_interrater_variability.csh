@@ -1,4 +1,4 @@
-#! /bin/tcsh -f
+#!/bin/tcsh -f
 
 # compute_interrater_variability
 #

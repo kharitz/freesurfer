@@ -1,3 +1,4 @@
+#!/usr/bin/env tclsh
 ##
 ## check_func_ras_coords.tcl
 ##

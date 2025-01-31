@@ -1,4 +1,4 @@
-#! /bin/tcsh
+#!/bin/tcsh
 
 #
 # show_tal

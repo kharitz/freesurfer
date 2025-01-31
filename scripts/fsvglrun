@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/usr/bin/env bash 
 
 # This script that will run its argument with vglrun is allowed and possible.
 # vglrun allows some graphical applications to run faster when on remote desktops

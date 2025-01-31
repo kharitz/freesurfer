@@ -1,4 +1,4 @@
-
+#!/usr/bin/env tclsh
 ##
 ## unpack_ima1.tcl
 ## Tthis cript looks at the headers of ima files in a predetermined 
