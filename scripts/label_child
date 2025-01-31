@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 #
 # label_child

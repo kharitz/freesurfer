@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # bbmask
 
 set VERSION = 'bbmask @FS_VERSION@';

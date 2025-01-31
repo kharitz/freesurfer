@@ -1,4 +1,4 @@
-#!/usr/bin/env csh -f
+#!/bin/csh -f
 # xhemireg
 
 # Create a new subject from an existing subject by left-right reversal

@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # thalseg
 
 set VERSION = 'make_average_subcort @FS_VERSION@';

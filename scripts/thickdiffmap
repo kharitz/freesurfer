@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 if ($#argv < 5) then
   echo "usage: thickdiffmap <subjscan1> <subjscan2> <commonsubj> <hemi> <step>..."

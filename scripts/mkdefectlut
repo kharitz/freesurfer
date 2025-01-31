@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # The sole purpose of this script is to create the
 # $DEV/distribution/DefectLUT.txt file. It does not
 # need to be distrubted.

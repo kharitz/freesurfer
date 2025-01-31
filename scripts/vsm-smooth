@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # vsm-smooth
 
 set VERSION = 'vsm-smooth @FS_VERSION@';

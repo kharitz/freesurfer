@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 if (! $?base) then
   echo must set base to point to $SUBJECTS_DIR/$subject

@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 # script to get the thickness values for the vertices found in a label file.
 # inputs:  label file and ascii thickness file

@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # vol2segavg
 
 set VERSION = 'vol2segavg @FS_VERSION@';

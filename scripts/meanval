@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # meanval
 
 set VERSION = 'meanval @FS_VERSION@';

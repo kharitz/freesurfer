@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # rcbf-prep
 
 set VERSION = 'rcbf-prep @FS_VERSION@';

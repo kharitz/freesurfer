@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # tkmeditfv
 
 set VERSION = 'tksurferfv @FS_VERSION@';

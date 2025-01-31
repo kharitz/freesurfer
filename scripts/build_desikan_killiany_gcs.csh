@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -ef
+#!/bin/tcsh -ef
 
 # For building a new morph-based cortical parcellation 
 # atlas for each hemisphere

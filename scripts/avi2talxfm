@@ -1,4 +1,4 @@
-#!/usr/bin/env csh -f
+#!/bin/csh -f
 #
 # avi2talxfm
 #

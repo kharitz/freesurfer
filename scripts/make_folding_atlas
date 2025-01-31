@@ -1,4 +1,4 @@
-#!/usr/bin/env tcsh -f
+#!/bin/tcsh -f
 # make_folding_atlas
 
 set VERSION = 'make_folding_atlas @FS_VERSION@';
