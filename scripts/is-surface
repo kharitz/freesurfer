@@ -1,4 +1,4 @@
-#!/usr/bin/env csh -f
+#!/bin/csh -f
 
 #
 # is-surface

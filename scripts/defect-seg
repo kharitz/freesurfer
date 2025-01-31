@@ -1,4 +1,4 @@
-#!/usr/bin/env csh -f
+#!/bin/csh -f
 # defect-seg
 
 # Creates segmentations and annotations for defect visualization
