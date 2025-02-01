@@ -1232,14 +1232,10 @@ static int MRISfindNeighborsAtVertex_newWkr(
   Temp* const temp = &tempForEachThread[omp_get_thread_num()];
   if (temp->capacity < (unsigned)mris->nvertices) {
     temp->capacity = mris->nvertices;
-    // DNG: before 1/31/2025, this free was not here. I don't know
-    // whether it makes a difference from a memory leak standpoint,
-    // but it does not hurt to free it.
-    if(temp->status) free(temp->status);
-    // Even with the above free, temp->status never gets freed and
-    // looks like a memory leak in valgrind, but it should not create
-    // a real memory leak, ie, one that grows everytime this function
-    // is run because it is static.
+    // Note: temp->status never gets freed and looks like a memory
+    // leak in valgrind, but it should not create a real memory leak,
+    // ie, one that grows everytime this function is run because it is
+    // static.
     temp->status  = (unsigned char*)realloc(temp->status, temp->capacity*sizeof(unsigned char));
     bzero(temp->status, temp->capacity*sizeof(unsigned char));
   }  
