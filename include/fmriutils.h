@@ -102,7 +102,7 @@ MRI *MRIvolMin(MRI *invol, MRI *out);
 MRI *MRIconjunct(MRI *invol, MRI *out);
 double MRIframeMax(MRI *vol, int frame, MRI *mask, int absflag,
                    int *cmax, int *rmax, int *smax);
-MRI *MRIframeMean(MRI *vol, MRI *volmn);
+MRI *MRIframeMean(MRI *vol, MRI *volmn,std::vector<double> FrameWeight={});
 MRI *MRIframeMedian(MRI *vol, MRI *volmn);
 MRI *fMRIdetrend(MRI *y, MATRIX *X);
 MRI *fMRItemporalAR1(MRI *fmri, float DOFAdjust, MRI *mask, MRI *ar1);
