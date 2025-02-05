@@ -26,6 +26,9 @@ public:
   // and convert dicom files with the same series as given file.
   static int dcm2NiiOneSeries(const char* dcmfile, bool convert=true);
 
+  // interface to singleDICOM() to convert only the single image provided
+  static int dcm2NiiSingleFile(const char* dcmfile);
+
   // interface to nii_dicom_batch.cpp::nii_getMrifsStruct()
   static MRIFSSTRUCT* getMrifsStruct(void);
 

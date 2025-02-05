@@ -1228,6 +1228,10 @@ int main(int argc, char *argv[])
     {
       DCM2NIIX_DICOM_FLIST = argv[++i];
     }
+    else if (strcmp(argv[i], "-dcm2niix-singlefile") == 0 || strcmp(argv[i], "--dcm2niix-singlefile") == 0)
+    {
+      DCM2NIIX_OnlySingleFile = 1;
+    }    
     else if (strcmp(argv[i], "-dcm2niix-opts") == 0 || strcmp(argv[i], "--dcm2niix-opts") == 0)
     {
       ++i;

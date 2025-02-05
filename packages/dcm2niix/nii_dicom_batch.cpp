@@ -8030,6 +8030,7 @@ int saveDcm2NiiCore(int nConvert, struct TDCMsort dcmSort[], struct TDICOMdata d
 			return EXIT_SUCCESS;
 	}
 #else
+	// opts.numSeries equals to 1
         double seriesNum = (double)dcmList[dcmSort[0].indx].seriesUidCrc;
         if (!isSameDouble(opts.seriesNumber[0], seriesNum))
             return EXIT_SUCCESS;
@@ -8834,6 +8835,8 @@ int singleDICOM(struct TDCMopts *opts, char *fname) {
 	dcmList[0].converted2NII = 1;
 	dcmList[0] = readDICOMx(nameList.str[0], &prefs, dti4D); //ignore compile warning - memory only freed on first of 2 passes
 	//dcmList[0] = readDICOMv(nameList.str[0], opts->isVerbose, opts->compressFlag, dti4D); //ignore compile warning - memory only freed on first of 2 passes
+	if (opts->isIgnoreSeriesInstanceUID)
+		dcmList[0].seriesUidCrc = dcmList[0].seriesNum;
 	fillTDCMsort(dcmSort[0], 0, dcmList[0]);
 	int ret = saveDcm2Nii(1, dcmSort, dcmList, &nameList, *opts, dti4D);
 	freeNameList(nameList);
