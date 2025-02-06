@@ -1096,7 +1096,7 @@ static void print_usage(void) {
   printf("   --nframesmin n : require at least this many frames\n");
   printf("   --ispm : input is spm-analyze. Set --i to stem.\n");
   printf("   --in_nspmzeropad nz : zero-padding for spm-analyze\n");
-  printf("   --nthreads nthreads : Set OPEN MP threads\n");
+  printf("   --threads nthreads : Set OPEN MP threads\n");
   printf("   --debug     turn on debugging\n");
   printf("   --checkopts don't run anything, just check options and exit\n");
   printf("   --help      print out information on how to use this program\n");

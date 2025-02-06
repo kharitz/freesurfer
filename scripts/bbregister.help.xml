@@ -31,7 +31,7 @@
     <positional><intro>None</intro></positional>
     <required-flagged>
       <argument>--s subject</argument>
-      <explanation>FreeSurfer subject name as found in $SUBJECTS_DIR.</explanation>
+      <explanation>FreeSurfer subject name as found in $SUBJECTS_DIR. Put after --init-reg if overriding the subjectname</explanation>
       <argument>--mov volid</argument>
       <explanation>"Moveable" volume. This is the template for the cross-modal volume. Eg, for fMRI, it is the volume used for motion correction.</explanation>
       <argument>--reg register.{dat,lta}</argument>

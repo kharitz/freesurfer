@@ -1,8 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from __future__ import print_function
 
 import optparse
-import os
 import sys
 import nibabel.freesurfer.io as fs
 import numpy as np
@@ -197,7 +196,7 @@ def sphericalProject(v, t):
     cmin = v[ev1mini,:]
     # axis 1 = y is aligned with this function (for brains in FS space)
     if (cmax[1] < cmin[1]):
-        ev1 = -1 * ev1;
+        ev1 = -1 * ev1
         
     ev2 = evecs[:,2]
     ev2maxi = np.argmax(ev2)
@@ -206,7 +205,7 @@ def sphericalProject(v, t):
     cmin = v[ev2mini,:]
     # axis 2 = z is aligned with this function (for brains in FS space)
     if (cmax[2] < cmin[2]):
-        ev2 = -1 * ev2;
+        ev2 = -1 * ev2
         
     ev3 = evecs[:,3]
     ev3maxi = np.argmax(ev3)
@@ -215,7 +214,7 @@ def sphericalProject(v, t):
     cmin = v[ev3mini,:]
     # axis 0 = x is aligned with this function (for brains in FS space)
     if (cmax[0] < cmin[0]):
-        ev3 = -1 * ev3;
+        ev3 = -1 * ev3
 
     # we map evN to -1..0..+1 (keep zero level fixed)
     # I have the feeling that this helps a little with the stretching

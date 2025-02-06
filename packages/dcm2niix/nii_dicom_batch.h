@@ -96,7 +96,8 @@ extern "C" {
     void readIniFile (struct TDCMopts *opts, const char * argv[]);
     int nii_saveNIIx(char * niiFilename, struct nifti_1_header hdr, unsigned char* im, struct TDCMopts opts);
     int nii_loadDir(struct TDCMopts *opts);
-  int nii_loadDirCore(char *indir, struct TDCMopts* opts);
+    int nii_loadDirCore(char *indir, struct TDCMopts* opts);
+    int singleDICOM(struct TDCMopts *opts, char *fname);
     void nii_SaveBIDS(char pathoutname[], struct TDICOMdata d, struct TDCMopts opts, struct nifti_1_header *h, const char * filename);
     int nii_createFilename(struct TDICOMdata dcm, char * niiFilename, struct TDCMopts opts);
     void  nii_createDummyFilename(char * niiFilename, struct TDCMopts opts);

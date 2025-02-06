@@ -128,6 +128,8 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include "DialogLoadODF.h"
+#include "LayerEditRef.h"
+#include "DialogGifMaker.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QtWidgets>
@@ -171,6 +173,9 @@ MainWindow::MainWindow( QWidget *parent, MyCmdLineParser* cmdParser ) :
   m_layerCollections["Supplement"] = new LayerCollection( "Supplement", this);
   LayerLandmarks* landmarks = new LayerLandmarks(this);
   m_layerCollections["Supplement"]->AddLayer(landmarks);
+  LayerEditRef* editref = new LayerEditRef(this);
+  editref->SetColor(QColor(0,255,0));
+  m_layerCollections["Supplement"]->AddLayer(editref);
 
   // hidden surface layers
   m_layerCollections["HiddenSurface"] = new LayerCollection("Surface", this);
@@ -373,6 +378,9 @@ MainWindow::MainWindow( QWidget *parent, MyCmdLineParser* cmdParser ) :
   m_dlgMovePoint->hide();
   for (int i = 0; i < 3; i++)
     connect(m_views[i], SIGNAL(PointSetPicked(LayerPointSet*, int)), m_dlgMovePoint, SLOT(OnPointSetPicked(LayerPointSet*,int)));
+
+  m_dlgSaveGif = new DialogGifMaker(this);
+  m_dlgSaveGif->hide();
 
   QStringList keys = m_layerCollections.keys();
   for ( int i = 0; i < keys.size(); i++ )
@@ -7595,6 +7603,12 @@ void MainWindow::OnCropVolume()
     m_views[i]->ResetCameraClippingRange();
 }
 
+void MainWindow::OnSaveGif()
+{
+  m_dlgSaveGif->show();
+  m_dlgSaveGif->raise();
+}
+
 void MainWindow::OnThresholdVolume()
 {
   m_dlgThresholdVolume->show();
@@ -10180,3 +10194,21 @@ bool MainWindow::GetNeurologicalView()
   return ((RenderView2D*)m_views[0])->GetNeurologicalView();
 }
 
+void MainWindow::SetEditRefPoint(LayerMRI *mri, double *pos_in)
+{
+  LayerEditRef* ref = (LayerEditRef*)GetSupplementLayer("EditRef");
+  double pos[3];
+  int n[3];
+  mri->WorldToVoxelIndex(pos_in, n);
+  mri->VoxelIndexToWorld(n, pos);
+//  qDebug() << "num of marks" << ref->GetNumberOfMarks();
+  if (ref->GetMRIRef() != mri || ref->GetNumberOfMarks() != 1)
+  {
+    ref->SetMRIRef(mri);
+    ref->SetStartPosition(pos);
+  }
+  else
+  {
+    ref->SetEndPosition(pos);
+  }
+}

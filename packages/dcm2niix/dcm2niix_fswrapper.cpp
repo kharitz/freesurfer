@@ -69,7 +69,7 @@ void dcm2niix_fswrapper::setOpts(const char* dcmindir, const char* dcm2niixopts)
   // set the options for freesurfer mgz orientation
   tdcmOpts.isRotate3DAcq = false;
   tdcmOpts.isFlipY = false;
-  tdcmOpts.isIgnoreSeriesInstanceUID = true;
+  tdcmOpts.isIgnoreSeriesInstanceUID = true;  // Advanced feature: '-m 2' ignores Series Instance UID
   tdcmOpts.isCreateBIDS = false;
   tdcmOpts.isGz = false;
   tdcmOpts.isForceStackSameSeries = 1; // merge 2D slice '-m y', tdcmOpts.isForceStackSameSeries = 1
@@ -161,7 +161,11 @@ void dcm2niix_fswrapper::__setDcm2niixOpts(const char *dcm2niixopts)
       else if (*v == 'y' || *v == 'Y' || *v == '1')
 	tdcmOpts.isForceStackSameSeries = 1;
       else if (*v == '2')
+      {
 	tdcmOpts.isForceStackSameSeries = 2;
+        tdcmOpts.isIgnoreSeriesInstanceUID = true;
+        //printf("Advanced feature: '-m 2' ignores Series Instance UID.\n");
+      }
       else if (*v == 'o' || *v == 'O')
 	tdcmOpts.isForceStackDCE = false;
     }
@@ -229,6 +233,27 @@ int dcm2niix_fswrapper::dcm2NiiOneSeries(const char* dcmfile, bool convert)
     tdcmOpts.isDumpNotConvert = true;  // retrieve dicom info only
 
   return nii_loadDirCore(tdcmOpts.indir, &tdcmOpts);
+}
+
+/*
+ * interface to singleDICOM() to to convert only the single image provided.
+ */
+int dcm2niix_fswrapper::dcm2NiiSingleFile(const char* dcmfile)
+{
+  // get seriesNo for given dicom file
+  struct TDICOMdata tdicomData = readDICOM((char*)dcmfile);
+
+  double seriesNo = (double)tdicomData.seriesUidCrc;
+  if (tdcmOpts.isIgnoreSeriesInstanceUID)
+    seriesNo = (double)tdicomData.seriesNum;
+
+  // set TDCMopts to convert just one series
+  tdcmOpts.seriesNumber[0] = seriesNo;
+  tdcmOpts.numSeries = 1;
+
+  tdcmOpts.isOnlySingleFile = true;
+  
+  return singleDICOM(&tdcmOpts, (char*)dcmfile);
 }
 
 // interface to nii_dicom_batch.cpp::nii_getMrifsStruct()

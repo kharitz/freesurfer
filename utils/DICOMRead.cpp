@@ -6069,6 +6069,18 @@ std::vector<MRIFSSTRUCT> *DICOMRead3(const char *dcmfile, bool convert)
   // if DCM2NIIX_DICOM_FLIST != NULL, pass it as dcmdir to dcm2niix;
   // dcm2niix will convert dicom files listed in DCM2NIIX_DICOM_FLIST instead of parsing the directory
   const char *dcmdir = (DCM2NIIX_DICOM_FLIST != NULL) ? DCM2NIIX_DICOM_FLIST : fio_dirname(dcmfile);
+
+  if (DCM2NIIX_OnlySingleFile)
+  {
+    printf("[INFO] converting single dicom %s ...\n", dcmfile);
+    dcm2niix_fswrapper::setOpts(dcmdir);
+    int ret = dcm2niix_fswrapper::dcm2NiiSingleFile(dcmfile);
+
+    std::vector<MRIFSSTRUCT> *mrifsStruct_vector = NULL;
+    if (ret == EXIT_SUCCESS)
+      mrifsStruct_vector = dcm2niix_fswrapper::getMrifsStructVector();
+    return mrifsStruct_vector;
+  }
   
   printf("dicomfile = %s\n", dcmfile);
   if (DCM2NIIX_DICOM_FLIST == NULL)

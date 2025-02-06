@@ -1642,6 +1642,19 @@ get_option(int argc, char *argv[])
     int err = MRIwrite(seg,argv[4]);
     exit(err);
   }
+  else if (!stricmp(option, "sa-aqueduct")){
+    // stand-alone option to segment aqueduct from aseg/synthseg
+    // 2=asegvol 3=norm 4=outputsegvol
+    MRI *aseg = MRIread(argv[2]);
+    if(aseg==NULL) exit(1);
+    MRI *t1 = MRIread(argv[3]);
+    if(t1==NULL) exit(1);
+    MRI *seg = MRIaqueductSeg(aseg, t1, 0.9);
+    if(!seg) exit(1);
+    printf("Writing to %s\n",argv[4]);fflush(stdout);
+    int err = MRIwrite(seg,argv[4]);
+    exit(err);
+  }
   else if (!stricmp(option, "fcd"))
   {
     fcd = 1 ;

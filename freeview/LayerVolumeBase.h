@@ -48,6 +48,8 @@ public:
   void ShiftVoxelsByRAS( double* ras_offset, int nPlane);
   void ShiftVoxels(int *nOffset, int nPlane);
 
+  QVector<int> SetVoxelByIndex( int* n, int nPlane, bool bAdd = true, bool ignore_brush_size = false ); // true is to add, false is to remove
+
   bool BorderFillByRAS( double* ras, int nPlane, bool b3D = false);
 
   void SetLiveWireByRAS( double* ras1, double* raw2, int nPlane );
@@ -104,6 +106,10 @@ public:
 
   virtual void GetDisplayBounds( double* bounds );
 
+  void WorldToVoxelIndex(double* pos_in, int* n_out);
+
+  void VoxelIndexToWorld(int* n_in, double* pos_out);
+
 signals:
   void FillValueChanged( double );
   void EraseValueChanged( double );
@@ -119,7 +125,6 @@ public slots:
   void DoneShifting();
 
 protected:
-  QVector<int> SetVoxelByIndex( int* n, int nPlane, bool bAdd = true, bool ignore_brush_size = false ); // true is to add, false is to remove
   QVector<int> SetVoxelByIndex( int* n1, int* n2, int nPlane, bool bAdd = true, bool ignore_brush_size = false, bool draw_as_box = false  );
   QVector<int> FloodFillByIndex( int* n, int nPlane, bool bAdd = true, bool ignore_overflow = true, char* mask_out = NULL, bool ignore_exclusion = false );
   QVector<int> BorderFillByRAS(int *n, int nPlane);

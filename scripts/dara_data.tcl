@@ -1,3 +1,4 @@
+#!/usr/bin/env tclsh
 ##
 ## dara_data.tcl
 ##

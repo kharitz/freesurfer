@@ -137,6 +137,9 @@
       <argument>-sa-cblum-from-seg segvol inseg outseg</argument>
       <explanation>Stand-alone version of -cblum-from-seg</explanation>
 
+      <argument>-sa-aqueduct aseg t1 out</argument>
+      <explanation>Stand-alone to seg acqueduct from an aseg (just replaces 4th vent and some brainstem voxels. Use synthseg.</explanation>
+
       <argument>-threads or -nthreads NTHREADS</argument>
       <explanation>Set the number of open mp threads</explanation>
     </optional-flagged>

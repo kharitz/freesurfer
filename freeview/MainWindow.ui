@@ -499,6 +499,8 @@
     <addaction name="separator"/>
     <addaction name="actionPlot"/>
     <addaction name="separator"/>
+    <addaction name="actionSaveGif"/>
+    <addaction name="separator"/>
     <addaction name="actionPreferences"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1882,6 +1884,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="actionSaveGif">
+   <property name="text">
+    <string>Save GIF...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
  </widget>
@@ -3899,6 +3909,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionSaveGif</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>OnSaveGif()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>606</x>
+     <y>435</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <signal>CycleOverlayRequested()</signal>
@@ -4017,5 +4043,6 @@
   <slot>OnDeleteLayer()</slot>
   <slot>SetNeurologicalView(bool)</slot>
   <slot>OnShowLabelOutline(bool)</slot>
+  <slot>OnSaveGif()</slot>
  </slots>
 </ui>

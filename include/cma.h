@@ -735,6 +735,8 @@ MRI **MRIdilateSegWithinTT(MRI *seg, int nDils, COLOR_TABLE *ct, MRI **r);
 SEGSTAT *Seg2NbrNonBrain(MRI *seg, COLOR_TABLE *ctab, double threshmm);
 int Seg2NbrNonBrainWrapper(char *subject, char *segname, COLOR_TABLE *ctab, char *statname, double threshmm);
 MRI *MRIoneHotEncode(MRI *seg, std::vector<int> segidlist, int Force1=1);
+MRI *MRIaqueductSeg(MRI *asegA, MRI *t1A, double t1thresh=0.9);
+
 
 class SegDice {
 public:

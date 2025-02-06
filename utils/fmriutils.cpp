@@ -1666,10 +1666,18 @@ double MRIframeMax(MRI *vol, int frame, MRI *mask, int signflag, int *cmax, int 
 /*---------------------------------------------------------------
   MRIframeMean() - computes mean over frames of each voxel.
   --------------------------------------------------------------*/
-MRI *MRIframeMean(MRI *vol, MRI *volmn)
+MRI *MRIframeMean(MRI *vol, MRI *volmn, std::vector<double> FrameWeight)
 {
   int c, r, s, f;
-  double v;
+
+  if(FrameWeight.size()!=0 && FrameWeight.size()!=vol->nframes){
+    printf("ERROR: MRIframeMean(): dim mismatch: weight=%d, vol=%d\n",(int)FrameWeight.size(),vol->nframes);
+    return(NULL);
+  }
+  if(FrameWeight.size() != 0){
+    for (f = 0; f < vol->nframes; f++) printf(" %8.4lf",FrameWeight[f]);
+    printf("\n");  fflush(stdout);
+  }
 
   if (volmn == NULL) {
     volmn = MRIallocSequence(vol->width, vol->height, vol->depth, MRI_FLOAT, 1);
@@ -1679,12 +1687,16 @@ MRI *MRIframeMean(MRI *vol, MRI *volmn)
   for (c = 0; c < vol->width; c++) {
     for (r = 0; r < vol->height; r++) {
       for (s = 0; s < vol->depth; s++) {
-        v = 0;
-        for (f = 0; f < vol->nframes; f++) v += MRIgetVoxVal(vol, c, r, s, f);
+	double v = 0;
+        for (f = 0; f < vol->nframes; f++) {
+	  double val = MRIgetVoxVal(vol, c, r, s, f);
+	  if(FrameWeight.size()!=0) val *= FrameWeight[f];
+	  v += val;
+	}
         MRIsetVoxVal(volmn, c, r, s, 0, v / vol->nframes);
-      }  // s
-    }    // r
-  }      // s
+      }// s
+    }// r
+  }// s
   return (volmn);
 }
 

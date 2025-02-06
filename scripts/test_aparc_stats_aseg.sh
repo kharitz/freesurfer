@@ -1,4 +1,4 @@
-#! /bin/bash -p
+#!/usr/bin/env bash -p
 # This is a test for aparc_stats_aseg
 function usage {
     echo "$0 -ref <ref_data>"

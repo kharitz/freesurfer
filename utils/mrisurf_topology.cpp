@@ -1224,7 +1224,7 @@ static int MRISfindNeighborsAtVertex_newWkr(
 
   typedef struct Temp {
     size_t          capacity;
-    unsigned char * status;
+    unsigned char * status=NULL;
   } Temp;
   
   static Temp tempForEachThread[_MAX_FS_THREADS];
@@ -1232,7 +1232,11 @@ static int MRISfindNeighborsAtVertex_newWkr(
   Temp* const temp = &tempForEachThread[omp_get_thread_num()];
   if (temp->capacity < (unsigned)mris->nvertices) {
     temp->capacity = mris->nvertices;
-    temp->status   = (unsigned char*)realloc(temp->status, temp->capacity*sizeof(unsigned char));
+    // Note: temp->status never gets freed and looks like a memory
+    // leak in valgrind, but it should not create a real memory leak,
+    // ie, one that grows everytime this function is run because it is
+    // static.
+    temp->status  = (unsigned char*)realloc(temp->status, temp->capacity*sizeof(unsigned char));
     bzero(temp->status, temp->capacity*sizeof(unsigned char));
   }  
   
@@ -1387,6 +1391,8 @@ static int MRISfindNeighborsAtVertex_newWkr(
   for (unsigned int i = 0; i < usedNeighborCount; i++) {
     temp->status[vlist[i]] = Status_notInSet;
   }
+  //Note: temp->status never gets freed and looks like a memory leak
+  //in valgrind, but it should be ok (see above).
   
   // Done
   //

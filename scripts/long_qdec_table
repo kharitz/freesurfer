@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # long_qdec_table
@@ -22,14 +22,9 @@ from __future__ import print_function
 import warnings
 warnings.filterwarnings('ignore', '.*negative int.*')
 
-import os
 import sys
-import shlex
 import optparse
 import logging
-import subprocess
-import tempfile
-import shutil
 
 from fsbindings.legacy import LongQdecTable, BadFileError
 

@@ -1869,7 +1869,8 @@ int MRISwriteGIFTILabel(MRIS *mris, gifti_image *image, int intent_code)
         //                                       mris->ct->entries[idx]->bi);
         // printf("%8.8X\n",labeltable.key[idx]);
 
-        printf("idx=%d, name=%s\n",idx,mris->ct->entries[n]->name);
+	if (Gdiag & DIAG_VERBOSE)
+          printf("[DEBUG] MRISwriteGIFTILabel(): idx=%d, name=%s\n",idx,mris->ct->entries[n]->name);
         labeltable.label[idx] = strcpyalloc(mris->ct->entries[n]->name);
 
         rgba[0] = mris->ct->entries[n]->rf;

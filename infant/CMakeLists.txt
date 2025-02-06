@@ -36,7 +36,7 @@ endif()
 
 install(FILES CNYBCH.yaml DESTINATION average)
 
-install(FILES license.niftyreg.txt DESTINATION docs)
+install_symlinks(niftyreg/license.niftyreg.txt TYPE files DESTINATION docs)
 
 install_append_help(infant_recon_all infant_recon_all.help.xml bin)
 
@@ -49,38 +49,47 @@ install(PROGRAMS docker/infant-container-entrypoint.bash DESTINATION bin)
 install(PROGRAMS docker/infant-container-entrypoint-aws.bash DESTINATION bin)
 
 # install external niftyreg binaries
-if(MARTINOS_BUILD)
 if(APPLE)
-  set(NIFTY_REG_DIR "/autofs/cluster/freesurfer/build/misc/infant/niftyreg-mac")
+  if(Apple_ARM64)
+    set(NIFTY_REG_DIR niftyreg/mac_arm64)
+  else()
+    set(NIFTY_REG_DIR niftyreg/mac_x86)
+  endif()
 else()
-  set(NIFTY_REG_DIR "/autofs/cluster/freesurfer/build/misc/infant/niftyreg-linux")
+  set(NIFTY_REG_DIR niftyreg/linux_x86)
 endif()
 foreach(CMD reg_resample reg_f3d reg_aladin)
-  install(PROGRAMS ${NIFTY_REG_DIR}/${CMD} DESTINATION bin)
+  if(APPLE)
+    install_symlinks(${NIFTY_REG_DIR}/${CMD} TYPE PROGRAMS DESTINATION bin)
+  else()
+    install_symlinks(${NIFTY_REG_DIR}/${CMD} TYPE PROGRAMS DESTINATION bin)
+  endif()
 endforeach()
 
+# install the model file for skullstripping
+install_symlinks(infant_synthstrip_01012025.pt TYPE files DESTINATION average/sscnn_skullstripping)
 # install externally-stored skullstripping models
-foreach(MODEL ax_sscnn.h5 cor_sscnn.h5 sag_sscnn.h5)
-  install(PROGRAMS /autofs/cluster/freesurfer/build/misc/infant/sscnn_skullstripping/${MODEL} DESTINATION average/sscnn_skullstripping)
-endforeach()
-endif()
+#foreach(MODEL ax_sscnn.h5 cor_sscnn.h5 sag_sscnn.h5 12600.pt)
+#  install(PROGRAMS /autofs/cluster/freesurfer/build/misc/infant/sscnn_skullstripping/${MODEL} #DESTINATION average/sscnn_skullstripping)
+#endforeach()
+#endif()
 
 # install any package requirements
-if(INSTALL_PYTHON_DEPENDENCIES)
-  set(PY_PKGS "numpy==1.16 tensorflow==1.5.0 keras==2.2.2 h5py==2.10.0 sklearn scikit-image tables psutil nibabel")
-  if(NOT DISTRIBUTE_FSPYTHON)
-    set(PKG_TARGET "--target=${pydir}/packages")
-  endif()
-  install(CODE "
-    message(STATUS \"Installing infant-freesurfer python package dependencies\")
-    execute_process(COMMAND bash -c \"${pydir}/bin/python3 -m pip install ${PKG_TARGET} ${PY_PKGS}\" RESULT_VARIABLE retcode)
-    if(NOT \${retcode} STREQUAL 0)
-      message(FATAL_ERROR \"Could not install infant-freesurfer python dependencies\")
-    endif()
-    execute_process(COMMAND bash -c \"find ${pydir}/bin ! -name 'python3*' -type f -exec rm -f {} +\" RESULT_VARIABLE retcode)
-    if(NOT \${retcode} STREQUAL 0)
-      message(FATAL_ERROR \"Could not remove pip-installed scripts\")
-    endif()"
-  )
-endif()
+#if(INSTALL_PYTHON_DEPENDENCIES)
+#  set(PY_PKGS "numpy==1.16 tensorflow==1.5.0 keras==2.2.2 h5py==2.10.0 sklearn scikit-image tables psutil nibabel")
+#  if(NOT DISTRIBUTE_FSPYTHON)
+#    set(PKG_TARGET "--target=${pydir}/packages")
+#  endif()
+#  install(CODE "
+#    message(STATUS \"Installing infant-freesurfer python package dependencies\")
+#    execute_process(COMMAND bash -c \"${pydir}/bin/python3 -m pip install ${PKG_TARGET} ${PY_PKGS}\" RESULT_VARIABLE retcode)
+#    if(NOT \${retcode} STREQUAL 0)
+#      message(FATAL_ERROR \"Could not install infant-freesurfer python dependencies\")
+#    endif()
+#    execute_process(COMMAND bash -c \"find ${pydir}/bin ! -name 'python3*' -type f -exec rm -f {} +\" RESULT_VARIABLE retcode)
+#    if(NOT \${retcode} STREQUAL 0)
+#      message(FATAL_ERROR \"Could not remove pip-installed scripts\")
+#    endif()"
+#  )
+#endif()
 

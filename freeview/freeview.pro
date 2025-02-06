@@ -16,6 +16,7 @@ SOURCES += \
     DialogAbout.cpp \
     DialogControlPointComment.cpp \
     DialogCropVolume.cpp \
+    DialogGifMaker.cpp \
     DialogGradientFilter.cpp \
     DialogLoadDTI.cpp \
     DialogLoadODF.cpp \
@@ -197,7 +198,8 @@ SOURCES += \
     vtkInteractorStyleMyTrackballCamera.cxx \
     FlowLayout.cpp \
     WindowLayerInfo.cpp \
-    DialogScreenshotOverlay.cpp
+    DialogScreenshotOverlay.cpp \
+    LayerEditRef.cpp
 
 HEADERS  += \
     Annotation2D.h \
@@ -210,6 +212,7 @@ HEADERS  += \
     DialogAbout.h \
     DialogControlPointComment.h \
     DialogCropVolume.h \
+    DialogGifMaker.h \
     DialogGradientFilter.h \
     DialogLoadDTI.h \
     DialogLoadODF.h \
@@ -383,10 +386,12 @@ HEADERS  += \
     vtkInteractorStyleMyTrackballCamera.h \
     FlowLayout.h \
     WindowLayerInfo.h \
-    DialogScreenshotOverlay.h
+    DialogScreenshotOverlay.h \
+    LayerEditRef.h
 
 FORMS    += MainWindow.ui \
     DialogControlPointComment.ui \
+    DialogGifMaker.ui \
     DialogLoadODF.ui \
     DialogMovePoint.ui \
     DialogNewAnnotation.ui \
