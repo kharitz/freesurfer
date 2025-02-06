@@ -12,29 +12,32 @@ endif
 set PYTHON_SCRIPT_DIR=$FREESURFER_HOME/python/scripts
 set MODEL=$FREESURFER_HOME/models/synthsurf_v10_230420.h5
 
-# If no arguments given
-# If requesting help
-if( $1 == "--help") then
+#----------------------------------------------------------------------
+# Help message
+#----------------------------------------------------------------------
+if ("$1" == "-h" || "$1" == "--help") then
   echo " "
-  echo "Recon-all-like stream for clinical scans of arbigrary orientation/resolution/contrast"
+  echo "Recon-all-like stream for clinical scans of arbitrary orientation/resolution/contrast"
   echo " "
-  echo "Use this script to process clinical scans of arbitrary orientation, resolution, and "
-  echo "contrast. It essentially runs a combination of:"
-  echo "* SynthSeg: to obtain a volumetric segmentation and linear registration to Talairach space"
-  echo "* SynthSR: to have a higher resolution 1mm MPRAGE for visualization"
-  echo "* SynthDist: to fit surfaces by predicting the distance maps and reconstructing topologically accurate cortical surfaces"
+  echo "Use this script to process clinical scans of arbitrary orientation, resolution, and contrast."
+  echo "It essentially runs a combination of:"
+  echo "  * SynthSeg:  volumetric segmentation + linear registration to Talairach space"
+  echo "  * SynthSR:   creation of a higher resolution 1mm MPRAGE for visualization"
+  echo "  * SynthDist: fitting surfaces by predicting distance maps for topologically-accurate cortical surfaces"
   echo " "
-  echo "Using this module is very simple: you just provide an input scan, the subject name, the"
-  echo "number of threads you want to use, and (optionally) the subjects directory:"
+  echo "Usage:"
+  echo "   recon-all-clinical.sh -i INPUT_SCAN -subjid SUBJECT_ID -threads THREADS [-sdir SUBJECTS_DIR] [-ct]"
   echo " "
-  echo "   recon-all-clinical.sh INPUT_SCAN SUBJECT_ID THREADS [SUBJECT_DIR]"
+  echo "Options:"
+  echo "   -i INPUT_SCAN         Path to the input scan"
+  echo "   -subjid SUBJECT_ID    Subject ID"
+  echo "   -sdir SUBJECTS_DIR    Path to the subjects directory (optional if SUBJECTS_DIR is set)"
+  echo "   -threads THREADS      Number of threads"
+  echo "   -ct                   Use this flag for CT scans in Hounsfield units (clips intensities to [0,80])"
+  echo "   -h, --help            Show this help message and exit"
   echo " "
-  echo "   (the argument [SUBJECT_DIR] is only necessary if the"
-  echo "    environment variable SUBJECTS_DIR has not been set"
-  echo "    or if you want to override it)"
-  echo " "
-  echo "This stream runs a bit faster than the original recon-all, since the volumetric"
-  echo "segmentation is much faster than the iterative Bayesian method in the standard stream"
+  echo "This stream is often faster than standard recon-all, since the volumetric segmentation"
+  echo "is much faster than the iterative Bayesian method in the standard pipeline."
   echo " "
   echo "If you use this stream for your analysis, please cite:"
   echo " "
@@ -57,62 +60,112 @@ if( $1 == "--help") then
   exit 0
 endif
 
-if( $#argv < 3 || $#argv > 4) then
+#----------------------------------------------------------------------
+# Parse command-line arguments
+#----------------------------------------------------------------------
+
+set INPUT_SCAN      = ""
+set SUBJECT_ID      = ""
+set THREADS         = ""
+set SUBJECT_DIR     = ""
+set CT_PROCESSING   = 0
+
+while ($#argv > 0)
+  switch ($1)
+    case "-i":
+      set INPUT_SCAN = $2
+      shift
+      breaksw
+
+    case "-subjid":
+      set SUBJECT_ID = $2
+      shift
+      breaksw
+
+    case "-threads":
+      set THREADS = $2
+      shift
+      breaksw
+
+    case "-sdir":
+      set SUBJECT_DIR = $2
+      shift
+      breaksw
+
+    case "-ct":
+      set CT_PROCESSING = 1
+      breaksw
+
+    default:
+      echo "Unknown option: $1"
+      echo "Use -h or --help for usage information."
+      exit 1
+  endsw
+  shift
+end
+
+# Check required arguments
+if ("$INPUT_SCAN" == "" || "$SUBJECT_ID" == "" || "$THREADS" == "") then
+  echo "Error: Missing required arguments."
+  echo "Use -h or --help for usage information."
   echo " "
-  echo "Usage: "
+  echo "Usage:"
+  echo "   recon-all-clinical.sh -i INPUT_SCAN -subjid SUBJECT_ID -threads THREADS [-sdir SUBJECTS_DIR] [-ct]"
   echo " "
-  echo "   recon-all-clinical.sh INPUT_SCAN SUBJECT_ID THREADS [SUBJECT_DIR]"
-  echo " "
-  echo "Or, for help"
-  echo " "
+  echo "Or, for help:"
   echo "   recon-all-clinical.sh --help"
   echo " "
   exit 1
 endif
 
-setenv INPUT_SCAN $1
-setenv SNAME $2
-setenv THREADS $3
+#----------------------------------------------------------------------
+# Set environment variables
+#----------------------------------------------------------------------
+setenv INPUT_SCAN  $INPUT_SCAN
+setenv SNAME       $SUBJECT_ID
+setenv THREADS     $THREADS
+setenv SUBJECTS_DIR $SUBJECT_DIR
 
-# Error if SUBJECTS_DIR (the environment variable) does not exist
-if ($#argv == 3) then
-  if (! $?SUBJECTS_DIR)  then
+# If -sdir was not provided, check the SUBJECTS_DIR env variable
+if ("$SUBJECT_DIR" == "") then
+  if (! $?SUBJECTS_DIR) then
     echo " "
-    echo "SUBJECTS_DIR variable does not exist"
-    echo "Please define it or provide subjects directory as fourth input"
-    echo " "
-    exit 1
-  endif
-endif
-
-# Error if SUBJECTS_DIR (the environemnt variable) is empty
-if ($#argv == 3) then
-  if ( $SUBJECTS_DIR == "" ) then
-    echo " "
-    echo "SUBJECTS_DIR variable is empty"
-    echo "Please redefine it or provide subjects directory as second input"
+    echo "SUBJECTS_DIR variable does not exist."
+    echo "Please define it using the -sdir flag or set it as an environment variable."
     echo " "
     exit 1
   endif
+
+  if ("$SUBJECTS_DIR" == "") then
+    echo " "
+    echo "SUBJECTS_DIR variable is empty."
+    echo "Please provide a valid directory using the -sdir flag or set it as an environment variable."
+    echo " "
+    exit 1
+  endif
+
+  # Resolve to absolute path
+  set SUBJECT_DIR = `getfullpath $SUBJECTS_DIR`
+else
+  set SUBJECT_DIR = `getfullpath $SUBJECT_DIR`
 endif
 
-# If SUBJECTS_DIR is provided, just set it
-if ($#argv == 4) then
-  set SUBJECTS_DIR = `getfullpath  $4`
-  setenv SUBJECTS_DIR $SUBJECTS_DIR
-endif
-
-# Error if subject directory does not exist
-if (! -d $SUBJECTS_DIR ) then
+# Validate that SUBJECT_DIR exists
+if (! -d $SUBJECT_DIR) then
   echo " "
   echo "Subjects directory:"
-  echo "   $SUBJECTS_DIR"
-  echo "does not exist"
+  echo "   $SUBJECT_DIR"
+  echo "does not exist."
   echo " "
   exit 1
 endif
 
-# Make sure that the (T1) hippocampal subfields are not running already for this subject
+# Export the final SUBJECTS_DIR
+setenv SUBJECTS_DIR $SUBJECT_DIR
+
+#----------------------------------------------------------------------
+# Check if process is already running
+#----------------------------------------------------------------------
 set IsRunningFile = ${SUBJECTS_DIR}/${SNAME}/scripts/IsRunning.lh+rh
 if(-e $IsRunningFile) then
   echo ""
@@ -130,10 +183,9 @@ if(-e $IsRunningFile) then
   cat  $IsRunningFile
   echo "----------------------------------------------------------"
   exit 1;
-endif
-
-# If everything is in place, let's do it! First, we create the directories we need
-mkdir -p $SUBJECTS_DIR/$SNAME
+#----------------------------------------------------------------------
+# Create required directories
+#----------------------------------------------------------------------
 mkdir -p $SUBJECTS_DIR/$SNAME/label
 mkdir -p $SUBJECTS_DIR/$SNAME/mri
 mkdir -p $SUBJECTS_DIR/$SNAME/mri/transforms
@@ -144,7 +196,17 @@ mkdir -p $SUBJECTS_DIR/$SNAME/tmp
 mkdir -p $SUBJECTS_DIR/$SNAME/touch
 mkdir -p $SUBJECTS_DIR/$SNAME/trash
 
-# Next, we create the IsRunning file
+#----------------------------------------------------------------------
+# Process CT scans if the flag is set
+#----------------------------------------------------------------------
+set CT_FLAG = "false"
+if ($CT_PROCESSING) then
+  set CT_FLAG = "true"
+endif
+
+#----------------------------------------------------------------------
+# Create IsRunning file
+#----------------------------------------------------------------------
 echo "------------------------------" > $IsRunningFile
 echo "SUBJECT SNAME" >> $IsRunningFile
 echo "DATE `date`"     >> $IsRunningFile
@@ -158,6 +220,9 @@ if($?PBS_JOBID) then
   echo "pbsjob $PBS_JOBID"  >> $IsRunningFile
 endif
 
+#----------------------------------------------------------------------
+# Set up the main log file
+#----------------------------------------------------------------------
 set LogFile = (${SUBJECTS_DIR}/${SNAME}/scripts/recon-all-clinical.log)
 rm -f $LogFile
 
@@ -174,23 +239,25 @@ if($?PBS_JOBID) then
 endif
 echo "------------------------------" >> $LogFile
 echo " " >> $LogFile
-cat $FREESURFER_HOME/build-stamp.txt  >> $LogFile
+
+# If build-stamp.txt exists in FREESURFER_HOME, append to log
+if ( -f $FREESURFER_HOME/build-stamp.txt ) then
+  cat $FREESURFER_HOME/build-stamp.txt  >> $LogFile
+endif
+
 echo " " >> $LogFile
 echo "setenv SUBJECTS_DIR $SUBJECTS_DIR"  >> $LogFile
 echo "cd `pwd`"   >> $LogFile
 echo $0 $argv  >> $LogFile
 echo ""  >> $LogFile
 
-
-echo "#--------------------------------------------" \
-   |& tee -a $LogFile
- echo "#@# recon-all-clinical `date`" \
-   |& tee -a $LogFile
+echo "#--------------------------------------------" |& tee -a $LogFile
+echo "#@# recon-all-clinical `date`"          |& tee -a $LogFile
 echo " " |& tee -a $LogFile
 
-############
-# commands #
-############
+#----------------------------------------------------------------------
+# Commands
+#----------------------------------------------------------------------
 
 # Initial mri_convert
 set cmd="mri_convert $INPUT_SCAN $SUBJECTS_DIR/$SNAME/mri/native.mgz -odt float"
@@ -205,6 +272,10 @@ cd $SUBJECTS_DIR/$SNAME/mri
 
 # SynthSeg
 set cmd="mri_synthseg --i ./native.mgz --o ./synthseg.mgz --parc --threads $THREADS --robust --vol ../stats/synthseg.vol.csv --cpu --qc ../stats/synthseg.qc.csv"
+if ("$CT_FLAG" == "true") then
+  # If CT, pass --ct
+  set cmd = "$cmd --ct"
+endif
 $cmd |& tee -a $LogFile
 if ($status) then
   echo "Error in SynthSeg" |& tee -a $LogFile
@@ -214,6 +285,10 @@ echo " " |& tee -a $LogFile
 
 # SynthSR
 set cmd="mri_synthsr --i ./native.mgz --o ./synthSR.raw.mgz --threads $THREADS --cpu"
+if ("$CT_FLAG" == "true") then
+  # If CT, pass --ct
+  set cmd = "$cmd --ct"
+endif
 $cmd |& tee -a $LogFile
 if ($status) then
   echo "Error in SynthSR" |& tee -a $LogFile
@@ -221,11 +296,14 @@ if ($status) then
 endif
 echo " " |& tee -a $LogFile
 
-# SynthSurf (Karthik's) code
-set cmd="fspython $PYTHON_SCRIPT_DIR/mri_synth_surf.py --subject_mri_dir $PWD   --input_image ./native.mgz --input_synthseg ./synthseg.mgz  --cpu --threads $THREADS --pad 5   --model_file $MODEL"
+# SynthSurf 
+set cmd="fspython $PYTHON_SCRIPT_DIR/mri_synth_surf.py --subject_mri_dir $PWD --input_image ./native.mgz --input_synthseg ./synthseg.mgz --cpu --threads $THREADS --pad 5 --model_file $MODEL"
+if ("$CT_FLAG" == "true") then
+  set cmd = "$cmd --ct"
+endif
 $cmd |& tee -a $LogFile
 if ($status) then
-  echo "Error in SynthSurfaces" |& tee -a $LogFile
+  echo "Error in SynthSurf" |& tee -a $LogFile
   exit 1
 endif
 echo " " |& tee -a $LogFile
@@ -241,8 +319,7 @@ endif
 echo " " |& tee -a $LogFile
 rm ./synthseg.resampled.mgz
 mri_convert ./synthSR.norm.tmp.mgz ./synthSR.norm.mgz -rl ./norm.mgz -odt float
-rm  ./synthSR.norm.tmp.mgz
-
+rm ./synthSR.norm.tmp.mgz
 
 # LTA convert
 set cmd="lta_convert --src norm.mgz --trg $FREESURFER_HOME/average/mni305.cor.mgz --inxfm transforms/talairach.xfm --outlta transforms/talairach.xfm.lta --subject fsaverage --ltavox2vox"

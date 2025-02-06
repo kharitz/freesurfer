@@ -33,6 +33,8 @@ def main():
     parser.add_argument("--cpu", action="store_true", help="enforce running with CPU rather than GPU.")
     parser.add_argument("--threads", type=int, default=-1, dest="threads",
                         help="number of threads to be used by PyTorch when running on CPU (-1 for maximum).")
+    parser.add_argument("--ct", action="store_true", help="(optional) Use this flag for CT scans in Hounsfield scale, "
+                                                          "it clips intensities to [0,80].")
 
 
     args = vars(parser.parse_args())
@@ -135,6 +137,9 @@ def main():
         # im_orig = im.clone()
         while len(im.shape) > 3:  # in case it's rgb
             im = torch.mean(im, axis=-1)
+            
+        if args['ct']:
+            im = np.clip(im, 0, 80)
         im = im - torch.min(im)
         im = im / torch.max(im)
         W = (np.ceil(np.array(im.shape) / 32.0) * 32).astype('int')
@@ -229,8 +234,9 @@ def main():
         WM[WM == 8] = 0
         WM[WM == 47] = 0
         WM[WM == 24] = 0
-        WM[WM == 7] = 0 
-        WM[WM == 46] = 0 
+        # Added by Karthik
+        WM[WM == 7] = 0 # Speeds up the process
+        WM[WM == 46] = 0 # Speeds up the process
         WM[WM == 14] = 0 # 3rd Ventricles
         WM[WM == 15] = 0 # 4th Ventricles
         WM[WM == 17] = 0 # LHippocampus
@@ -246,8 +252,9 @@ def main():
         FILLED[pred_seg == 16] = 0
         FILLED[pred_seg == 7] = 0
         FILLED[pred_seg == 46] = 0
-        FILLED[pred_seg == 8] = 0 
-        FILLED[pred_seg == 47] = 0 
+        # Added by Karthik
+        FILLED[pred_seg == 8] = 0 # Speeds up the process
+        FILLED[pred_seg == 47] = 0 # Speeds up the process
         # Done
         if (args['case_type'] == 'right-ccb' or args['case_type'] == 'right-c'):
             FILLED[FILLED > 0] = 127
@@ -596,9 +603,6 @@ def conv_slow_fallback(x, kernel):
         y = y.addcmul_(x[i], kernel[i])
     return y
 
-
-
-#######
 
 
 def align_volume_to_ref(volume, aff, aff_ref=None, return_aff=False, n_dims=3):

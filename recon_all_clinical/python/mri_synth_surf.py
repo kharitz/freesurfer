@@ -42,6 +42,8 @@ def main():
                         help="number of threads to be used by tensorflow when running on CPU.")
     parser.add_argument("--pad", type=int, default=0, dest="pad",
                         help="pad with these many voxels in every direction")
+    parser.add_argument("--ct", action="store_true", help="(optional) Use this flag for CT scans in Hounsfield scale, "
+                                                          "it clips intensities to [0,80].")
 
     args = vars(parser.parse_args())
 
@@ -58,6 +60,9 @@ def main():
 
     print('Reading image')
     im, aff, hdr = load_volume(args['input_image'], im_only=False, dtype='float')
+    
+    if args['ct']:
+        im = np.clip(im, 0, 80)
 
     print('Reading SynthSeg segmentation / parcellation')
     imS, affS, hdrS = load_volume(args['input_synthseg'], im_only=False, dtype='float')

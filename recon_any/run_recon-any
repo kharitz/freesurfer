@@ -17,38 +17,41 @@ set MODEL_DIR=$FREESURFER_HOME_FSPYTHON/models/recon-any
 
 # If no arguments given
 # If requesting help
-if( $1 == "--help") then
+if ("$1" == "-h" || "$1" == "--help") then
   echo " "
   echo "Recon-all-like stream for clinical scans of arbitrary orientation/resolution/contrast"
-  echo "(including low-fied/portable MRI scans and 3D reconstructions of dissection photographs)"
+  echo "(including low-field/portable MRI scans and 3D reconstructions of dissection photographs)"
   echo " "
   echo "It essentially runs a combination of:"
   echo "* SynthSeg: to obtain a volumetric segmentation and linear registration to Talairach space"
   echo "* SynthSR: to have a higher resolution 1mm MPRAGE for visualization"
   echo "* SynthDist: to fit surfaces by predicting the distance maps and reconstructing topologically accurate cortical surfaces"
   echo " "
-  echo "Using this module is very simple: you just provide an input scan, the subject name, the number"
-  echo "of threads you want to use, the side (left/right/both; see below) and (optionally) the subjects directory:"
+  echo "Usage:"
+  echo "  recon-any.sh -i INPUT_SCAN -subjid SUBJECT_ID -threads THREADS -side SIDE [-sdir SUBJECT_DIR] [-ct]"
   echo " "
-  echo "   recon-any.sh INPUT_SCAN SUBJECT_ID THREADS SIDE [SUBJECT_DIR]"
+  echo "Required arguments:"
+  echo "  -i INPUT_SCAN       Path to the input scan."
+  echo "  -subjid SUBJECT_ID  Subject ID."
+  echo "  -threads THREADS    Number of threads to use."
+  echo "  -side SIDE          Side of the brain to process. Must be one of:"
+  echo "                        left-c, left-ccb, right-c, right-ccb, both."
   echo " "
-  echo "   (the argument [SUBJECT_DIR] is only necessary if the"
-  echo "    environment variable SUBJECTS_DIR has not been set"
-  echo "    or if you want to override it)"
+  echo "                        The options are:"
+  echo "                      * left-c (for left cerebrum, useful for ex vivo scans of single hemispheres)"
+  echo "                      * left-ccb (left cerebrum/cerebellum/brainstem; usefull when cerebellum and brainstem have not been dissected)"
+  echo "                      * right-c (for right cerebrum)"
+  echo "                      * right-ccb (right cerebrum/cerebellum/brainstem)"
+  echo "                      * both (for in vivo scans, or ex vivo scans with full brains)"
+  echo "Optional arguments:"
+  echo "  -sdir SUBJECT_DIR   Directory for subjects (default: uses SUBJECTS_DIR environment variable)."
+  echo "  -ct                 Enable processing for CT scans in Hounsfield scale. Clips intensities to [0, 80]."
+  echo "  -h, --help          Show this help message and exit."
   echo " "
-  echo "The SIDE parameter must be:"
-  echo "   * left-c (for left cerebrum, useful for ex vivo scans of single hemispheres)"
-  echo "   * left-ccb (left cerebrum/cerebellum/brainstem; usefull when cerebellum and brainstem have not been dissected)"
-  echo "   * right-c (for right cerebrum)"
-  echo "   * right-ccb (right cerebrum/cerebellum/brainstem)"
-  echo "   * both (for in vivo scans, or ex vivo scans with full brains)"
+  echo "This stream runs faster than the original recon-all due to more efficient volumetric segmentation."
   echo " "
-  echo "This stream runs a bit faster than the original recon-all, since the volumetric"
-  echo "segmentation is much faster than the iterative Bayesian method in the standard stream"
-  echo " "
-  echo "If you use this stream for your analysis, please cite:"
-  echo " "
-  echo "K Gopinath, DN Greeve, S Das, S Arnold, C Magdamo, JE Iglesias:"
+  echo "Citations:"
+  echo "K Gopinath, DN Greve, S Das, S Arnold, C Magdamo, JE Iglesias:"
   echo "Cortical analysis of heterogeneous clinical brain MRI scans for large-scale neuroimaging studies"
   echo "Proceedings of MICCAI 2023 (accepted)."
   echo " "
@@ -67,18 +70,47 @@ if( $1 == "--help") then
   exit 0
 endif
 
-if( $#argv < 4 || $#argv > 5) then
-  echo " "
-  echo "Usage: "
-  echo " "
-  echo "   run_recon-any INPUT_SCAN SUBJECT_ID THREADS SIDE [SUBJECT_DIR]"
-  echo " "
-  echo "Or, for help"
-  echo " "
-  echo "   run_recon-any --help"
-  echo " "
-  exit 1
-endif
+# Parse command-line arguments
+set INPUT_SCAN = ""
+set SUBJECT_ID = ""
+set THREADS = ""
+set SIDE = ""
+set SUBJECT_DIR = ""
+set CT_PROCESSING = 0
+
+while ($#argv > 0)
+  switch ($1)
+    case "-i":
+      set INPUT_SCAN = $2
+      shift
+      breaksw
+    case "-subjid":
+      set SUBJECT_ID = $2
+      shift
+      breaksw
+    case "-threads":
+      set THREADS = $2
+      shift
+      breaksw
+    case "-side":
+      set SIDE = $2
+      shift
+      breaksw
+    case "-sdir":
+      set SUBJECT_DIR = $2
+      shift
+      breaksw
+    case "-ct":
+      set CT_PROCESSING = 1
+      breaksw
+    default:
+      echo "Unknown option: $1"
+      echo "Use -h or --help for usage information."
+      exit 1
+  endsw
+  shift
+end
+
 
 # test for model files, print download/install instructions if not found
 if( ! -d "$MODEL_DIR" ) then
@@ -99,11 +131,24 @@ if( ! -d "$MODEL_DIR" ) then
   exit 1
 endif
 
-setenv INPUT_SCAN $1
-setenv SNAME $2
-setenv THREADS $3
-setenv SIDE $4
 
+# Set environment variables
+setenv INPUT_SCAN $INPUT_SCAN
+setenv SNAME $SUBJECT_ID
+setenv THREADS $THREADS
+setenv SIDE $SIDE
+setenv SUBJECTS_DIR $SUBJECT_DIR
+
+
+
+# Validate required arguments
+if ("$INPUT_SCAN" == "" || "$SUBJECT_ID" == "" || "$THREADS" == "" || "$SIDE" == "") then
+  echo "Missing required arguments!"
+  echo "Use -h or --help for usage information."
+  exit 1
+endif
+
+# Validate SIDE
 if ( $SIDE != "left-c" && $SIDE != "left-ccb" && $SIDE != "right-c" && $SIDE != "right-ccb" && $SIDE != "both" ) then
   echo "SIDE must be left-c, left-ccb, right-c, right-ccb, or both"
   exit 1
@@ -117,43 +162,47 @@ if ( $SIDE == "right-c" || $SIDE == "right-ccb" || $SIDE == "both" ) then
   set DO_RIGHT = 1
 endif
 
-# Error if SUBJECTS_DIR (the environment variable) does not exist
-if ($#argv == 4) then
-  if (! $?SUBJECTS_DIR)  then
+# Use -sdir or SUBJECTS_DIR environment variable
+if ("$SUBJECT_DIR" == "") then
+  # If -sdir is not provided, check the SUBJECTS_DIR environment variable
+  if (! $?SUBJECTS_DIR) then
     echo " "
-    echo "SUBJECTS_DIR variable does not exist"
-    echo "Please define it or provide subjects directory as fourth input"
-    echo " "
-    exit 1
-  endif
-endif
-
-# Error if SUBJECTS_DIR (the environemnt variable) is empty
-if ($#argv == 4) then
-  if ( $SUBJECTS_DIR == "" ) then
-    echo " "
-    echo "SUBJECTS_DIR variable is empty"
-    echo "Please redefine it or provide subjects directory as second input"
+    echo "SUBJECTS_DIR variable does not exist."
+    echo "Please define it using the -sdir flag or set it as an environment variable."
     echo " "
     exit 1
   endif
+  
+  # Ensure SUBJECTS_DIR is not empty
+  if ("$SUBJECTS_DIR" == "") then
+    echo " "
+    echo "SUBJECTS_DIR variable is empty."
+    echo "Please provide a valid value using the -sdir flag or set it as an environment variable."
+    echo " "
+    exit 1
+  endif
+
+  # Resolve SUBJECTS_DIR to its absolute path
+  set SUBJECT_DIR = `getfullpath $SUBJECTS_DIR`
+else
+  # Resolve the provided -sdir argument to its absolute path
+  set SUBJECT_DIR = `getfullpath $SUBJECT_DIR`
 endif
 
-# If SUBJECTS_DIR is provided, just set it
-if ($#argv == 5) then
-  set SUBJECTS_DIR = `getfullpath  $5`
-  setenv SUBJECTS_DIR $SUBJECTS_DIR
-endif
-
-# Error if subject directory does not exist
-if (! -d $SUBJECTS_DIR ) then
+# Validate that SUBJECT_DIR exists and is a directory
+if (! -d $SUBJECT_DIR) then
   echo " "
   echo "Subjects directory:"
-  echo "   $SUBJECTS_DIR"
-  echo "does not exist"
+  echo "   $SUBJECT_DIR"
+  echo "does not exist."
   echo " "
   exit 1
 endif
+
+# Export SUBJECT_DIR for later use
+setenv SUBJECTS_DIR $SUBJECT_DIR
+
+
 
 # Make sure that the script is not running already for this subject
 set IsRunningFile = ${SUBJECTS_DIR}/${SNAME}/scripts/IsRunning.file
@@ -231,6 +280,15 @@ echo "#--------------------------------------------" \
    |& tee -a $LogFile
 echo " " |& tee -a $LogFile
 
+
+# Process CT scans if the flag is set
+set CT_FLAG = "false"
+if ($CT_PROCESSING) then
+  # echo "Processing input as CT scan. Clipping intensities to [0, 80]."
+  set CT_FLAG = "true"
+  # Add any additional CT processing logic here
+endif
+
 ############
 # commands #
 ############
@@ -246,7 +304,13 @@ echo " " |& tee -a $LogFile
 
 # Python code to do inference
 cd $SUBJECTS_DIR/$SNAME/mri
-set cmd="fspython $PYTHON_SCRIPT_DIR/inference.py --input_image ./native.mgz --output_dir ./ --model_path $MODEL_DIR  --case_type $SIDE --cpu --threads $THREADS"
+set cmd="fspython $PYTHON_SCRIPT_DIR/inference.py --input_image ./native.mgz --output_dir ./ --model_path $MODEL_DIR --case_type $SIDE --cpu --threads $THREADS"
+# Add --ct if CT_FLAG is true
+if ($CT_FLAG == "true") then
+  set cmd="$cmd --ct"
+endif
+
+# Execute the command
 $cmd |& tee -a $LogFile
 if ($status) then
   echo "Error in inference.py" |& tee -a $LogFile
